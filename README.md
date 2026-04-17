@@ -9,6 +9,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 3. **Trains** a small TransformerLens transformer to classify optimal distance (0–11) from state
 4. **Probes** each residual stream layer with logistic regression to find linearly decodable features
 5. **Patches** activations causally to distinguish features the model *uses* from those it merely encodes
+6. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
 
 ## Key findings
 
@@ -22,7 +23,14 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 - Swapping the full residual stream between distance groups produces **100% flip rate at every layer**, including before any transformer block runs
 - Conclusion: the linear embedding layer encodes optimal distance almost completely; the transformer blocks refine hard cases but don't restructure the distance representation
 
-The model is effectively a linear classifier over its own embedded state.
+**Phase 5 — Tuned lens:**
+- Logit lens accuracy grows from 20% at the embedding to 78% at L3, meaning each block is doing meaningful work (unlike the patching experiment suggested)
+- The gap between logit lens (~20–35%) and tuned lens (~60–80%) at early layers shows the residual stream holds the right information in a rotated basis the final head can't yet read — the tuned lens learns that rotation
+- The gap closes by L3 (78.5% vs 81.3%), confirming the final block aligns the representation to the head's reading direction
+- Distance 1 and 2 show a near-zero → ~100% accuracy jump at L2, a striking phase transition where the representation snaps into place
+- Distances 5–9 remain hard at every layer, consistent with the class-imbalance in training data
+
+The model is effectively a linear classifier over its own embedded state, but the transformer blocks matter for hard inputs.
 
 ## Project structure
 
@@ -33,7 +41,8 @@ dataset.py         — Dataset generation, split saving/loading, BFS cache manag
 model.py           — CubeTransformer (TransformerLens HookedRootModule)
 train.py           — Training loop (AdamW + cosine annealing, class-weighted CE)
 probe.py           — Phase 4: linear probes on residual stream activations
-patch.py           — Phase 5: concept-direction and counterfactual activation patching
+patch.py           — Phase 5a: concept-direction and counterfactual activation patching
+tuned_lens.py      — Phase 5b: logit lens + trained per-layer affine lens
 ```
 
 ## Quickstart
@@ -53,11 +62,14 @@ uv run cube-train
 # Phase 4: linear probing
 uv run python probe.py
 
-# Phase 5: activation patching
+# Phase 5a: activation patching
 uv run python patch.py
+
+# Phase 5b: logit lens + tuned lens
+uv run python tuned_lens.py
 ```
 
-Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, `probe_results.html`, `patch_results.html`, `patch_cf_results.html`
+Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
 
 ## Model architecture
 
