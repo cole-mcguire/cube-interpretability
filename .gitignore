@@ -11,9 +11,7 @@ data/
 checkpoints/
 
 # Generated outputs
-probe_results.html
-patch_results.html
-patch_cf_results.html
+*.html
 
 # Claude Code
 .claude/
