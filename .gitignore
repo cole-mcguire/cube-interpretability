@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Large data files — regenerate with `uv run cube-dataset`
+data/
+
+# Model checkpoints — regenerate with `uv run cube-train`
+checkpoints/
+
+# Generated outputs
+probe_results.html
+patch_results.html
+patch_cf_results.html
+
+# macOS
+.DS_Store
