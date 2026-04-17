@@ -10,6 +10,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 4. **Probes** each residual stream layer with logistic regression to find linearly decodable features
 5. **Patches** activations causally to distinguish features the model *uses* from those it merely encodes
 6. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
+7. **Sparse autoencoder** — trains an overcomplete SAE on each layer's residual stream to find monosemantic features and check alignment with known concepts
 
 ## Key findings
 
@@ -32,6 +33,12 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 
 The model is effectively a linear classifier over its own embedded state, but the transformer blocks matter for hard inputs.
 
+**Phase 5 — Sparse autoencoder (SAE, 4× expansion, 512 features):**
+- Face and distance features are strongly monosemantic: dedicated SAE features correlate with `face_solved` (r ≈ 0.77–0.87) and `optimal_distance` (r ≈ 0.81–0.89) at every layer
+- Symmetric face pairs (U/D, F/B, L/R) consistently share the same top SAE features — the model treats geometrically equivalent face pairs identically
+- Corner orientation features are weaker (r ≈ 0.5–0.63) and strongest at the embedding layer, again confirming that corner orientation is encoded early and then transformed away
+- The final layer (L3) is naturally sparser (mean L0 ≈ 200 vs ~400 in earlier layers), consistent with the model compressing to a decision
+
 ## Project structure
 
 ```
@@ -43,6 +50,7 @@ train.py           — Training loop (AdamW + cosine annealing, class-weighted C
 probe.py           — Phase 4: linear probes on residual stream activations
 patch.py           — Phase 5a: concept-direction and counterfactual activation patching
 tuned_lens.py      — Phase 5b: logit lens + trained per-layer affine lens
+sae.py             — Phase 5c: sparse autoencoder, feature alignment analysis
 ```
 
 ## Quickstart
@@ -67,6 +75,9 @@ uv run python patch.py
 
 # Phase 5b: logit lens + tuned lens
 uv run python tuned_lens.py
+
+# Phase 5c: sparse autoencoder
+uv run python sae.py
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
@@ -119,3 +130,4 @@ U U' U2 | D D' D2 | F F' F2 | B B' B2 | L L' L2 | R R' R2
 - Belrose et al. (2023) — [Eliciting Latent Predictions from Transformers with the Tuned Lens](https://arxiv.org/abs/2303.08112)
 - Meng et al. (2022) — [Locating and Editing Factual Associations in GPT](https://arxiv.org/abs/2202.05262) (activation patching methodology)
 - Nanda et al. (2023) — [Progress measures for grokking via mechanistic interpretability](https://arxiv.org/abs/2301.05217)
+- Bricken et al. (2023) — [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features)
