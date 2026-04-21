@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import pickle
 import threading
@@ -39,6 +40,123 @@ MARGIN_Y = 24
 CONTROL_PANEL_WIDTH = 340
 
 
+# ---------------------------------------------------------------------------
+# 3D geometry
+# ---------------------------------------------------------------------------
+
+_FACE_AXES_3D = {
+    "U": {"normal": (0, 1, 0),  "right": (1, 0, 0),  "down": (0, 0, 1)},
+    "D": {"normal": (0, -1, 0), "right": (1, 0, 0),  "down": (0, 0, -1)},
+    "F": {"normal": (0, 0, 1),  "right": (1, 0, 0),  "down": (0, -1, 0)},
+    "B": {"normal": (0, 0, -1), "right": (-1, 0, 0), "down": (0, -1, 0)},
+    "L": {"normal": (-1, 0, 0), "right": (0, 0, 1),  "down": (0, -1, 0)},
+    "R": {"normal": (1, 0, 0),  "right": (0, 0, -1), "down": (0, -1, 0)},
+}
+
+
+def _build_sticker_quads() -> list[tuple[tuple, list]]:
+    """Return one (normal, [corner0..corner3]) tuple per sticker, in cube.py order."""
+    S = 0.44  # half-sticker size; leaves a ~0.12-unit gap between stickers
+    quads = []
+    for face_name in ["U", "D", "F", "B", "L", "R"]:
+        ax = _FACE_AXES_3D[face_name]
+        n, r, d = ax["normal"], ax["right"], ax["down"]
+        for row in range(2):
+            for col in range(2):
+                rs = -1 if row == 0 else 1
+                cs = -1 if col == 0 else 1
+                cx = n[0] + cs * 0.5 * r[0] + rs * 0.5 * d[0]
+                cy = n[1] + cs * 0.5 * r[1] + rs * 0.5 * d[1]
+                cz = n[2] + cs * 0.5 * r[2] + rs * 0.5 * d[2]
+                # corners in CCW order as seen from outside
+                corners = []
+                for (dr, dc) in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
+                    corners.append((
+                        cx + dc * S * r[0] + dr * S * d[0],
+                        cy + dc * S * r[1] + dr * S * d[1],
+                        cz + dc * S * r[2] + dr * S * d[2],
+                    ))
+                quads.append((n, corners))
+    return quads
+
+
+_STICKER_QUADS = _build_sticker_quads()
+
+
+# ---------------------------------------------------------------------------
+# 3D canvas widget
+# ---------------------------------------------------------------------------
+
+class Cube3DCanvas(ttk.Frame):
+    SIZE = 260
+    SCALE = 88
+
+    def __init__(self, parent: tk.Widget) -> None:
+        super().__init__(parent)
+        self.yaw = math.radians(35)
+        self.pitch = math.radians(22)
+        self._drag_start: tuple | None = None
+        self._last_state: np.ndarray | None = None
+
+        self.canvas = tk.Canvas(
+            self,
+            width=self.SIZE,
+            height=self.SIZE,
+            background="#111827",
+            highlightthickness=0,
+        )
+        self.canvas.pack()
+        self.canvas.bind("<ButtonPress-1>", self._on_press)
+        self.canvas.bind("<B1-Motion>", self._on_drag)
+
+    def _on_press(self, event: tk.Event) -> None:
+        self._drag_start = (event.x, event.y, self.yaw, self.pitch)
+
+    def _on_drag(self, event: tk.Event) -> None:
+        if self._drag_start is None or self._last_state is None:
+            return
+        x0, y0, yaw0, pitch0 = self._drag_start
+        self.yaw = yaw0 + (event.x - x0) * 0.01
+        self.pitch = max(
+            -math.pi / 2 + 0.05,
+            min(math.pi / 2 - 0.05, pitch0 + (event.y - y0) * 0.01),
+        )
+        self.redraw(self._last_state)
+
+    def _rotate(self, v: tuple) -> tuple:
+        x, y, z = v
+        x2 = x * math.cos(self.yaw) + z * math.sin(self.yaw)
+        z2 = -x * math.sin(self.yaw) + z * math.cos(self.yaw)
+        y3 = y * math.cos(self.pitch) - z2 * math.sin(self.pitch)
+        z3 = y * math.sin(self.pitch) + z2 * math.cos(self.pitch)
+        return x2, y3, z3
+
+    def _project(self, v: tuple) -> tuple:
+        rx, ry, rz = self._rotate(v)
+        cx = self.SIZE / 2 + rx * self.SCALE
+        cy = self.SIZE / 2 - ry * self.SCALE
+        return cx, cy, rz
+
+    def redraw(self, cube_state: np.ndarray) -> None:
+        self._last_state = cube_state
+        self.canvas.delete("all")
+
+        visible: list[tuple] = []
+        for sticker_idx, (normal, corners_3d) in enumerate(_STICKER_QUADS):
+            _, _, nz = self._rotate(normal)
+            if nz <= 0:
+                continue  # backface culling
+            proj = [self._project(c) for c in corners_3d]
+            depth = sum(p[2] for p in proj) / 4
+            pts_2d = [(p[0], p[1]) for p in proj]
+            color_name = IDX_TO_COLOR[int(cube_state[sticker_idx])]
+            visible.append((depth, pts_2d, COLOR_TO_HEX[color_name]))
+
+        for _, pts, color in sorted(visible, key=lambda x: x[0]):
+            flat = [c for pt in pts for c in pt]
+            self.canvas.create_polygon(flat, fill=color, outline="#111827", width=3)
+
+
 class CubeVisualizer:
     def __init__(self, root: tk.Tk):
         self.root = root
@@ -62,6 +180,7 @@ class CubeVisualizer:
         self._build_ui()
         self._bind_shortcuts()
         self.redraw()
+        self.cube3d.redraw(self.cube.state)
 
     def _build_ui(self) -> None:
         canvas_width, canvas_height = self._canvas_dimensions()
@@ -83,6 +202,9 @@ class CubeVisualizer:
             highlightthickness=0,
         )
         self.canvas.grid(row=0, column=0, sticky="nw", padx=(0, 16))
+
+        self.cube3d = Cube3DCanvas(frame)
+        self.cube3d.grid(row=1, column=0, sticky="nw", padx=(0, 16), pady=(12, 0))
 
         controls = ttk.Frame(frame)
         controls.grid(row=0, column=1, sticky="nsew")
@@ -329,6 +451,7 @@ class CubeVisualizer:
     def redraw(self) -> None:
         self.canvas.delete("all")
         self._draw_cube_net()
+        self.cube3d.redraw(self.cube.state)
 
         solved_faces = int(self.cube.face_solved().sum())
         oriented_corners = int(self.cube.corner_oriented().sum())

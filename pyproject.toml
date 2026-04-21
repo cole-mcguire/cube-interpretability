@@ -1,7 +1,7 @@
 [project]
 name = "cube-simulator"
 version = "0.1.0"
-description = "Mechanistic interpretability of a small transformer trained on 2x2x2 Rubik's Cube optimal-distance classification — linear probing, activation patching, tuned lens, sparse autoencoders, and BFS optimal solver"
+description = "Mechanistic interpretability of a small transformer trained on 2x2x2 Rubik's Cube optimal-distance classification — linear probing, activation patching, tuned lens, sparse autoencoders, BFS optimal solver, and interactive 3D visualizer"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.26.0",

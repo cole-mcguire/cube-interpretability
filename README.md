@@ -53,6 +53,8 @@ cube-interpretability/
 │   └── generate_dataset()  Scramble sequences with labels
 │
 ├── cube_visualizer.py      Interactive tkinter visualizer
+│   ├── 2D net view         Flat unfolded cube with per-sticker color labels
+│   ├── 3D view             Drag-to-rotate orthographic projection (no extra deps)
 │   └── Solver panel        Load table, Step / ▶ Play through optimal solution
 │
 ├── dataset.py              Generate and save train/val/test splits (.npz)
