@@ -378,7 +378,7 @@ class CubeVisualizer:
         self._play_btn.config(state="normal" if moves else "disabled")
 
     def _load_distances(self) -> None:
-        cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "distances_cache.pkl")
+        cache = os.path.join("data", "distances_cache.pkl")
         try:
             with open(cache, "rb") as f:
                 self._distances = pickle.load(f)
