@@ -22,18 +22,16 @@ cube-train = "train:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.wheel]
-only-include = [
-    "cube.py",
-    "cube_visualizer.py",
-    "dataset.py",
-    "model.py",
-    "train.py",
-    "probe.py",
-    "patch.py",
-    "tuned_lens.py",
-    "sae.py",
-]
+[tool.hatch.build.targets.wheel.force-include]
+"cube.py" = "cube.py"
+"cube_visualizer.py" = "cube_visualizer.py"
+"dataset.py" = "dataset.py"
+"model.py" = "model.py"
+"train.py" = "train.py"
+"probe.py" = "probe.py"
+"patch.py" = "patch.py"
+"tuned_lens.py" = "tuned_lens.py"
+"sae.py" = "sae.py"
 
 [dependency-groups]
 dev = [
