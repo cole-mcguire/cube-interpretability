@@ -14,6 +14,22 @@ import numpy as np # pyright: ignore[reportMissingImports]
 from cube import Cube, IDX_TO_COLOR, MOVE_NAMES, solve
 
 
+def _find_project_root() -> str:
+    """Walk up from CWD until we find a directory containing pyproject.toml."""
+    d = os.getcwd()
+    for _ in range(6):
+        if os.path.exists(os.path.join(d, "pyproject.toml")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return os.getcwd()
+
+_PROJECT_ROOT = _find_project_root()
+_DISTANCES_CACHE = os.path.join(_PROJECT_ROOT, "data", "distances_cache.pkl")
+
+
 FACE_ORDER = ["U", "D", "F", "B", "L", "R"]
 FACE_START = {name: idx * 4 for idx, name in enumerate(FACE_ORDER)}
 FACE_GRID_POSITIONS = {
@@ -378,7 +394,7 @@ class CubeVisualizer:
         self._play_btn.config(state="normal" if moves else "disabled")
 
     def _load_distances(self) -> None:
-        cache = os.path.join("data", "distances_cache.pkl")
+        cache = _DISTANCES_CACHE
         try:
             with open(cache, "rb") as f:
                 self._distances = pickle.load(f)
