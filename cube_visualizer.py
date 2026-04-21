@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
+import pickle
+import threading
 import tkinter as tk
 from tkinter import ttk
 
 import numpy as np # pyright: ignore[reportMissingImports]
 
-from cube import Cube, IDX_TO_COLOR, MOVE_NAMES
+from cube import Cube, IDX_TO_COLOR, MOVE_NAMES, solve
 
 
 FACE_ORDER = ["U", "D", "F", "B", "L", "R"]
@@ -47,6 +50,14 @@ class CubeVisualizer:
         self.status_var = tk.StringVar()
         self.history_var = tk.StringVar()
         self.scramble_length_var = tk.IntVar(value=12)
+
+        self._distances: dict | None = None
+        self._distances_loading = False
+        self._solution_moves: list[int] = []
+        self._solution_step = 0
+        self._playing = False
+        self._play_delay_var = tk.IntVar(value=500)
+        self._solve_status_var = tk.StringVar()
 
         self._build_ui()
         self._bind_shortcuts()
@@ -136,6 +147,57 @@ class CubeVisualizer:
             justify="left",
         ).grid(row=5, column=0, sticky="w", pady=(12, 0))
 
+        ttk.Separator(controls, orient="horizontal").grid(
+            row=6, column=0, sticky="ew", pady=(16, 12)
+        )
+
+        ttk.Label(
+            controls,
+            text="Solver",
+            font=("Helvetica", 14, "bold"),
+        ).grid(row=7, column=0, sticky="w", pady=(0, 8))
+
+        solver_top = ttk.Frame(controls)
+        solver_top.grid(row=8, column=0, sticky="ew")
+        solver_top.columnconfigure(1, weight=1)
+
+        self._solve_btn = ttk.Button(
+            solver_top, text="Solve", command=self._on_solve
+        )
+        self._solve_btn.grid(row=0, column=0, sticky="w", padx=(0, 8))
+
+        ttk.Label(
+            solver_top,
+            textvariable=self._solve_status_var,
+            wraplength=240,
+            justify="left",
+            foreground="#4b5563",
+        ).grid(row=0, column=1, sticky="w")
+
+        solver_bottom = ttk.Frame(controls)
+        solver_bottom.grid(row=9, column=0, sticky="ew", pady=(8, 0))
+
+        self._step_btn = ttk.Button(
+            solver_bottom, text="Step", command=self._on_step, state="disabled"
+        )
+        self._step_btn.grid(row=0, column=0, sticky="w", padx=(0, 4))
+
+        self._play_btn = ttk.Button(
+            solver_bottom, text="▶ Play", command=self._on_play, state="disabled"
+        )
+        self._play_btn.grid(row=0, column=1, sticky="w", padx=(0, 12))
+
+        ttk.Label(solver_bottom, text="Speed:").grid(row=0, column=2, sticky="w")
+        ttk.Spinbox(
+            solver_bottom,
+            from_=50,
+            to=2000,
+            increment=50,
+            textvariable=self._play_delay_var,
+            width=5,
+        ).grid(row=0, column=3, sticky="w", padx=(4, 4))
+        ttk.Label(solver_bottom, text="ms").grid(row=0, column=4, sticky="w")
+
     def _bind_shortcuts(self) -> None:
         for face in "UDFBLR":
             self.root.bind(face.lower(), lambda event, f=face: self.apply_move(f))
@@ -149,6 +211,7 @@ class CubeVisualizer:
     def reset_cube(self) -> None:
         self.cube = Cube()
         self.move_history.clear()
+        self._clear_solution()
         self.redraw()
 
     def scramble_cube(self) -> None:
@@ -156,7 +219,112 @@ class CubeVisualizer:
         self.move_history.clear()
         moves = self.cube.scramble(int(self.scramble_length_var.get()), self.rng)
         self.move_history.extend(MOVE_NAMES[idx] for idx in moves)
+        self._clear_solution()
         self.redraw()
+
+    # ------------------------------------------------------------------
+    # Solver
+    # ------------------------------------------------------------------
+
+    def _clear_solution(self) -> None:
+        self._playing = False
+        self._solution_moves = []
+        self._solution_step = 0
+        self._solve_status_var.set("")
+        self._step_btn.config(state="disabled")
+        self._play_btn.config(state="disabled")
+
+    def _on_solve(self) -> None:
+        if self.cube.is_solved():
+            self._solve_status_var.set("Already solved!")
+            return
+
+        if self._distances is None:
+            if self._distances_loading:
+                return
+            self._distances_loading = True
+            self._solve_btn.config(state="disabled")
+            self._solve_status_var.set("Loading distance table…")
+            threading.Thread(target=self._load_distances, daemon=True).start()
+            return
+
+        moves = solve(self.cube.state, self._distances)
+        self._solution_moves = moves
+        self._solution_step = 0
+        self._update_solution_display()
+        self._step_btn.config(state="normal")
+        self._play_btn.config(state="normal" if moves else "disabled")
+
+    def _load_distances(self) -> None:
+        cache = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "distances_cache.pkl")
+        try:
+            with open(cache, "rb") as f:
+                self._distances = pickle.load(f)
+            self.root.after(0, self._on_distances_loaded)
+        except FileNotFoundError:
+            self.root.after(0, lambda: self._solve_status_var.set(
+                "Error: data/distances_cache.pkl not found.\nRun: uv run cube-dataset"
+            ))
+            self.root.after(0, lambda: self._solve_btn.config(state="normal"))
+            self._distances_loading = False
+
+    def _on_distances_loaded(self) -> None:
+        self._distances_loading = False
+        self._solve_btn.config(state="normal")
+        self._on_solve()
+
+    def _on_step(self) -> None:
+        if self._solution_step >= len(self._solution_moves):
+            return
+        move_idx = self._solution_moves[self._solution_step]
+        self.cube.apply_move(move_idx)
+        self.move_history.append(MOVE_NAMES[move_idx])
+        self._solution_step += 1
+        self.redraw()
+        self._update_solution_display()
+        if self._solution_step >= len(self._solution_moves):
+            self._step_btn.config(state="disabled")
+            self._play_btn.config(state="disabled")
+
+    def _on_play(self) -> None:
+        if self._playing:
+            self._playing = False
+            self._play_btn.config(text="▶ Play")
+        else:
+            if self._solution_step >= len(self._solution_moves):
+                return
+            self._playing = True
+            self._play_btn.config(text="■ Stop")
+            self._play_next()
+
+    def _play_next(self) -> None:
+        if not self._playing or self._solution_step >= len(self._solution_moves):
+            self._playing = False
+            self._play_btn.config(text="▶ Play")
+            return
+        self._on_step()
+        if self._solution_step < len(self._solution_moves):
+            delay = max(50, int(self._play_delay_var.get()))
+            self.root.after(delay, self._play_next)
+        else:
+            self._playing = False
+            self._play_btn.config(text="▶ Play")
+
+    def _update_solution_display(self) -> None:
+        if not self._solution_moves:
+            self._solve_status_var.set("No solution.")
+            return
+        names = [MOVE_NAMES[m] for m in self._solution_moves]
+        done = names[: self._solution_step]
+        remaining = names[self._solution_step :]
+        total = len(self._solution_moves)
+        left = total - self._solution_step
+        parts = []
+        if done:
+            parts.append(f"[{' '.join(done)}]")
+        if remaining:
+            parts.append(" ".join(remaining))
+        self._solve_status_var.set(f"{left}/{total} moves left: {' '.join(parts)}")
 
     def redraw(self) -> None:
         self.canvas.delete("all")

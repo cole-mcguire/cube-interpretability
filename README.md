@@ -5,12 +5,13 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 ## What this project does
 
 1. **Simulates** a 2×2×2 cube with a one-hot state encoding (24 stickers × 6 colors = 144-dim vector)
-2. **Generates** a dataset of scrambled cube states with BFS-computed optimal distances (God's number = 11)
-3. **Trains** a small TransformerLens transformer to classify optimal distance (0–11) from state
-4. **Probes** each residual stream layer with logistic regression to find linearly decodable features
-5. **Patches** activations causally to distinguish features the model *uses* from those it merely encodes
-6. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
-7. **Sparse autoencoder** — trains an overcomplete SAE on each layer's residual stream to find monosemantic features and check alignment with known concepts
+2. **Solves** any cube state optimally via BFS distance-table lookup, and generates scramble/solution pairs
+3. **Generates** a dataset of scrambled cube states with BFS-computed optimal distances (God's number = 11)
+4. **Trains** a small TransformerLens transformer to classify optimal distance (0–11) from state
+5. **Probes** each residual stream layer with logistic regression to find linearly decodable features
+6. **Patches** activations causally to distinguish features the model *uses* from those it merely encodes
+7. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
+8. **Sparse autoencoder** — trains an overcomplete SAE on each layer's residual stream to find monosemantic features and check alignment with known concepts
 
 ## Key findings
 
@@ -39,19 +40,79 @@ The model is effectively a linear classifier over its own embedded state, but th
 - Corner orientation features are weaker (r ≈ 0.5–0.63) and strongest at the embedding layer, again confirming that corner orientation is encoded early and then transformed away
 - The final layer (L3) is naturally sparser (mean L0 ≈ 200 vs ~400 in earlier layers), consistent with the model compressing to a decision
 
-## Project structure
+## File map
 
 ```
-cube.py            — 2×2×2 simulator, one-hot encoding, BFS distance computation
-cube_visualizer.py — Interactive tkinter visualizer
-dataset.py         — Dataset generation, split saving/loading, BFS cache management
-model.py           — CubeTransformer (TransformerLens HookedRootModule)
-train.py           — Training loop (AdamW + cosine annealing, class-weighted CE)
-probe.py           — Phase 4: linear probes on residual stream activations
-patch.py           — Phase 5a: concept-direction and counterfactual activation patching
-tuned_lens.py      — Phase 5b: logit lens + trained per-layer affine lens
-sae.py             — Phase 5c: sparse autoencoder, feature alignment analysis
+cube-interpretability/
+│
+├── cube.py                 Core cube simulator
+│   ├── Cube                State machine: apply_move, scramble, encode/decode
+│   ├── solve()             Optimal BFS-table solver → list of move indices
+│   ├── generate_scramble_solution_pairs()
+│   ├── compute_optimal_distances()   Full BFS (~25 min, cached)
+│   └── generate_dataset()  Scramble sequences with labels
+│
+├── cube_visualizer.py      Interactive tkinter visualizer
+│   └── Solver panel        Load table, Step / ▶ Play through optimal solution
+│
+├── dataset.py              Generate and save train/val/test splits (.npz)
+├── model.py                CubeTransformer — TransformerLens HookedRootModule
+│                           d_model=128, n_layers=4, n_heads=4 (~200k params)
+├── train.py                AdamW + cosine annealing, class-weighted CE
+│
+├── probe.py                Phase 4 — linear probes on residual stream
+│                           LogisticRegression (face_solved, corner_oriented)
+│                           Ridge regression (optimal_distance, scramble_depth)
+│
+├── patch.py                Phase 5a — activation patching
+│                           Concept-direction ablation + counterfactual swap
+│
+├── tuned_lens.py           Phase 5b — logit lens & trained per-layer affine lens
+│
+├── sae.py                  Phase 5c — sparse autoencoder (4× expansion, 512 features)
+│                           Dead-feature resampling, Pearson alignment analysis
+│
+├── walkthrough.ipynb       Executed notebook: all phases with inline plots
+│
+├── data/                   (gitignored — regenerate with uv run cube-dataset)
+│   ├── distances_cache.pkl BFS table: state bytes → optimal distance
+│   ├── train.npz
+│   ├── val.npz
+│   └── test.npz
+│
+├── checkpoints/            (gitignored — regenerate with uv run cube-train)
+│   └── best.pt
+│
+└── pyproject.toml          uv project; scripts: cube-tests, cube-visualizer,
+                            cube-dataset, cube-train
 ```
+
+## Solver API
+
+`cube.py` exposes two functions for optimal solving (requires the BFS distance table):
+
+```python
+import pickle
+from cube import Cube, MOVE_NAMES, solve, generate_scramble_solution_pairs
+
+with open("data/distances_cache.pkl", "rb") as f:
+    distances = pickle.load(f)
+
+# Solve a single cube state
+cube = Cube()
+cube.scramble(9)
+solution = solve(cube.state, distances)
+print([MOVE_NAMES[m] for m in solution])   # e.g. ['R', "U'", 'F2', 'D', 'B2', 'L']
+
+# Generate (scramble, solution) pairs in bulk
+pairs = generate_scramble_solution_pairs(1000, distances, max_scramble=11)
+for scramble_moves, solution_moves in pairs:
+    ...
+```
+
+`solve()` uses greedy descent on the BFS distance table — because the table stores true shortest-path distances, the greedy choice is always optimal (HTM-optimal, ≤ 11 moves).
+
+The visualizer (`uv run cube-visualizer`) includes a **Solver** panel: click **Solve** to compute the optimal solution for the current cube state, then step through it move-by-move or auto-play at a configurable speed. The distance table is loaded once in a background thread on first use.
 
 ## Quickstart
 

@@ -507,6 +507,84 @@ def generate_dataset(
 
 
 # ---------------------------------------------------------------------------
+# Solver
+# ---------------------------------------------------------------------------
+
+def solve(state: np.ndarray, distances: dict[bytes, int]) -> list[int]:
+    """
+    Return the optimal (HTM) solution sequence for a given cube state.
+
+    Uses the precomputed BFS distance table to greedily pick whichever move
+    reduces the distance by exactly 1 at each step.  Because the table encodes
+    true shortest-path distances, this greedy choice is always optimal.
+
+    Args:
+        state:     (24,) int8 array of color indices (from Cube.state)
+        distances: dict mapping state.tobytes() → HTM distance (from compute_optimal_distances)
+
+    Returns:
+        List of move indices (0–17) that solve the cube.  Empty list if already solved.
+    """
+    state = np.asarray(state, dtype=np.int8)
+    solution: list[int] = []
+
+    for _ in range(20):  # God's number for 2x2 is 11; 20 is a safe upper bound
+        key = state.tobytes()
+        d = distances.get(key)
+        if d is None:
+            raise ValueError("State not found in distance table — was it computed correctly?")
+        if d == 0:
+            break
+
+        for move_idx in range(NUM_MOVES):
+            face_idx = move_idx // 3
+            turn_type = move_idx % 3
+            if turn_type == 0:
+                next_state = state[BASE_PERMUTATIONS[face_idx]]
+            elif turn_type == 1:
+                next_state = state[INV_PERMUTATIONS[face_idx]]
+            else:
+                p = BASE_PERMUTATIONS[face_idx]
+                next_state = state[p][p]
+
+            if distances.get(next_state.tobytes()) == d - 1:
+                solution.append(move_idx)
+                state = next_state
+                break
+
+    return solution
+
+
+def generate_scramble_solution_pairs(
+    n_pairs: int,
+    distances: dict[bytes, int],
+    max_scramble: int = 11,
+    rng: Optional[np.random.Generator] = None,
+) -> list[tuple[list[int], list[int]]]:
+    """
+    Generate (scramble_moves, solution_moves) pairs.
+
+    Each pair starts from the solved state, applies a random scramble of up to
+    `max_scramble` moves, then finds the optimal solution using the BFS table.
+
+    Returns:
+        List of (scramble_moves, solution_moves) tuples, where each element is
+        a list of move indices (0–17).  Use MOVE_NAMES[i] to convert to strings.
+    """
+    if rng is None:
+        rng = np.random.default_rng()
+
+    pairs: list[tuple[list[int], list[int]]] = []
+    for _ in range(n_pairs):
+        depth = int(rng.integers(1, max_scramble + 1))
+        cube = Cube()
+        scramble_moves = cube.scramble(depth, rng)
+        solution_moves = solve(cube.state, distances)
+        pairs.append((scramble_moves, solution_moves))
+    return pairs
+
+
+# ---------------------------------------------------------------------------
 # Unit tests
 # ---------------------------------------------------------------------------
 
