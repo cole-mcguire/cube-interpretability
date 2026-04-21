@@ -26,6 +26,13 @@ build-backend = "hatchling.build"
 only-include = [
     "cube.py",
     "cube_visualizer.py",
+    "dataset.py",
+    "model.py",
+    "train.py",
+    "probe.py",
+    "patch.py",
+    "tuned_lens.py",
+    "sae.py",
 ]
 
 [dependency-groups]
