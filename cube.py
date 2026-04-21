@@ -398,8 +398,11 @@ class Cube:
 
 def compute_optimal_distances(verbose: bool = True) -> dict[bytes, int]:
     """
-    BFS from the canonical solved state over all 18 face moves to compute the
+    BFS from all 24 rotationally equivalent solved states to compute the
     optimal (half-turn metric) distance for every reachable cube state.
+
+    Seeding from all 24 orientations means the solver finds the shortest path
+    to *any* solved orientation, removing bias toward a specific face alignment.
 
     Returns a dict mapping state.tobytes() → distance (0–11).
     Runtime: ~2–4 minutes; call once and cache the result.
@@ -410,9 +413,11 @@ def compute_optimal_distances(verbose: bool = True) -> dict[bytes, int]:
     distances: dict[bytes, int] = {}
     queue: deque[bytes] = deque()
 
-    init_key = SOLVED_STATE.tobytes()
-    distances[init_key] = 0
-    queue.append(init_key)
+    for sym_state in SOLVED_SYMMETRY_STATES:
+        key = sym_state.tobytes()
+        if key not in distances:
+            distances[key] = 0
+            queue.append(key)
 
     t0 = time.perf_counter()
     while queue:
