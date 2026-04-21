@@ -22,8 +22,8 @@ Sticker layout — 24 stickers, indices 0..23:
    middle row; the internal ordering above is what the code uses.)
 
 Color-to-index mapping:
-  W=0 (white/U), Y=1 (yellow/D), O=2 (orange/F),
-  R=3 (red/B),   G=4 (green/L), B=5 (blue/R)
+  W=0 (white/U), Y=1 (yellow/D), G=4 (green/F),
+  B=5 (blue/B),  O=2 (orange/L), R=3 (red/R)
 
 Move vocabulary (18 moves = 6 faces × 3 quarter turns):
   U, U', U2, D, D', D2, F, F', F2, B, B', B2, L, L', L2, R, R', R2
@@ -56,10 +56,10 @@ MOVE_NAME_TO_IDX = {name: idx for idx, name in enumerate(MOVE_NAMES)}
 SOLVED_STATE = np.array(
     [0]*4 +   # U face: stickers 0-3  → White
     [1]*4 +   # D face: stickers 4-7  → Yellow
-    [2]*4 +   # F face: stickers 8-11 → Orange
-    [3]*4 +   # B face: stickers 12-15 → Red
-    [4]*4 +   # L face: stickers 16-19 → Green
-    [5]*4,    # R face: stickers 20-23 → Blue
+    [4]*4 +   # F face: stickers 8-11 → Green
+    [5]*4 +   # B face: stickers 12-15 → Blue
+    [2]*4 +   # L face: stickers 16-19 → Orange
+    [3]*4,    # R face: stickers 20-23 → Red
     dtype=np.int8
 )
 
