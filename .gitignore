@@ -13,6 +13,14 @@ checkpoints/
 # Generated outputs
 *.html
 
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+
 # Claude Code
 .claude/
 

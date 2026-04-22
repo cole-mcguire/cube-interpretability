@@ -1,0 +1,591 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{amssymb}
+\setstretch{1.05}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+
+\title{Interpreting Transformer Representations on Rubik's Cube Tasks\\
+\large Progress Report}
+\author{Cole McGuire}
+\date{}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+% ============================================================
+We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully-enumerable
+domain for mechanistic interpretability.  A small transformer
+($d_\text{model}{=}128$, 4 layers, ${\sim}200\text{k}$ parameters) is trained to
+classify the optimal half-turn-metric distance to solved (0--11), achieving
+78.5\% validation accuracy against an 8.3\% random baseline.  We then apply
+four interpretability methods to understand what the model has learned.  Linear
+probing finds that face-level solved status is 98\% decodable at \emph{every}
+layer including the raw embedding, and that optimal distance is encoded almost
+completely in the embedding itself (MAE drops from 0.87 to 0.40 in the first
+block).  Activation patching reveals a dissociation: the probe-readable features
+are not causally active---ablating their directions produces zero change in
+model output---whereas swapping the full residual stream between distance classes
+achieves a 100\% prediction flip at every layer.  Tuned-lens analysis reconciles
+these findings: logit-lens accuracy grows from 20\% to 78\% across blocks,
+demonstrating that each block is contributing meaningful computation, but in a
+rotated basis that the final unembedding layer alone cannot read.  Sparse
+autoencoders confirm that face and distance features are represented
+monosemantically ($r \approx 0.81$--$0.89$), while corner-orientation features
+are weaker and concentrated at the embedding layer.  Finally, motivated by
+instructor feedback, we evaluate how well the cube state can be conveyed to a
+pre-trained language model through text.  Of four representations tested, a
+new \emph{piece-identity} encoding---which explicitly names each corner cubie by
+its solved-state colors and states its current position and orientation---is the
+only state-based representation to consistently solve depth-5 scrambles, though
+depth-7 remains a hard wall for all representations including chain-of-thought
+prompting.
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+% ============================================================
+
+Mechanistic interpretability asks not only whether a neural network can solve a
+task, but \emph{how}: which features are encoded in intermediate representations,
+which are causally relevant to the output, and how computation flows through
+layers.  Most such work has been done on large language models, where the sheer
+scale makes it difficult to achieve a complete account.  We instead choose a
+domain where the full state space is enumerable, optimal solutions are known for
+every state, and the relevant geometric structure is explicit: the $2{\times}2{\times}2$
+Rubik's cube.
+
+Prior work has explored the cube primarily from a performance perspective.
+Agostinelli et al.\ train a deep reinforcement learning agent that solves all
+test configurations \cite{agostinelli2019deepcubea}.  Takano demonstrates that
+self-supervised training on reverse scrambles is sufficient for near-optimal
+solving \cite{takano2021selfsupervision}.  Chasmai proposed CubeTR, a transformer trained via sequence modelling on the
+cube, though this work was subsequently withdrawn for lacking experimental
+validation \cite{chasmai2021cubetr}.  Gupta et al.\ provide a more rigorous
+transformer-based study, using the $2{\times}2{\times}2$ cube as a controlled
+domain to investigate how explicit world-model pretraining objectives affect
+representations and downstream reinforcement learning, combining linear probing
+and causal interventions with GRPO post-training
+\cite{gupta2024worldmodels}.  Our work is complementary: where Gupta et al.\
+compare training objectives and study the effect on solving performance, we fix
+the training objective and apply a broader suite of interpretability tools to
+characterize what a single trained model represents.
+
+For interpretability methodology we follow Alain and Bengio's framework of
+linear classifier probes \cite{alain2016probes}, Belinkov's critical survey of
+their promises and limitations \cite{belinkov2022probing}, Belrose et al.'s
+tuned-lens technique for reading intermediate predictions \cite{belrose2023tunedlens},
+Meng et al.'s causal activation-patching methodology
+\cite{meng2022locatingfactual}, Bricken et al.'s sparse autoencoder approach
+to monosemantic feature decomposition \cite{bricken2023monosemantic}, and
+Nanda et al.'s analysis of grokking via mechanistic interpretability
+\cite{nanda2023grokking}.  We are also motivated by Variengien et al.'s
+theoretical result that belief-state geometry is linearly represented in
+transformer residual streams \cite{variengien2024beliefstate}---the cube
+provides a clean, discrete instance of this claim.
+
+The core question this project addresses is: \emph{what internal representations
+does a small transformer learn when trained on a combinatorial task with known
+optimal structure, and do those representations match the task's known
+geometric features?}  A secondary question, which emerged from instructor
+feedback mid-project, is: \emph{what text representation of cube state is
+necessary and sufficient for a pre-trained language model to reason about the
+cube?}
+
+% ============================================================
+\section{Related Work}
+% ============================================================
+
+\paragraph{Cube-solving with neural networks.}
+DeepCubeA \cite{agostinelli2019deepcubea} uses a value network trained by
+BFS-bootstrapping; Takano \cite{takano2021selfsupervision} shows reverse-scramble
+self-supervision yields state-of-the-art performance.  Chasmai proposed CubeTR, a transformer trained via sequence modelling, though
+this work was withdrawn for lacking experimental validation
+\cite{chasmai2021cubetr}.  Most directly related is Gupta et al.\
+\cite{gupta2024worldmodels}, who train transformers on the $2{\times}2{\times}2$
+cube with explicit world-model objectives and apply linear probes and causal
+interventions---methodology closely parallel to ours.  Our work differs in focus:
+we analyze a single classification model with a richer interpretability suite
+(tuned lens, SAE, text representation testing) rather than comparing training
+objectives.
+
+\paragraph{Linear probing.}
+Alain and Bengio \cite{alain2016probes} propose training linear classifiers on
+frozen intermediate representations to measure what information each layer
+encodes.  Belinkov \cite{belinkov2022probing} surveys methodological pitfalls,
+including the risk of confusing \emph{encoding} with \emph{use}.  We address this
+risk directly via activation patching (Section \ref{sec:patch}).
+
+\paragraph{Tuned lens.}
+The logit lens \cite{nostalgebraist2020logitlens} projects intermediate residual
+stream states directly through the final unembedding.  Belrose et al.\
+\cite{belrose2023tunedlens} improve this with a per-layer affine probe (tuned
+lens), showing it is more reliable and less biased.  We apply both to our cube
+model.
+
+\paragraph{Activation patching.}
+Meng et al.\ \cite{meng2022locatingfactual} introduce causal mediation analysis
+for transformers: swapping activations from a clean to a corrupted run identifies
+which components are causally responsible for a prediction.  We adapt this to a
+concept-direction ablation: we project probe directions out of the residual stream
+and measure whether model output changes.
+
+\paragraph{Sparse autoencoders.}
+Bricken et al.\ \cite{bricken2023monosemantic} train overcomplete autoencoders
+on transformer residual streams to find monosemantic features that do not emerge
+from direct examination of weight matrices.  We apply this technique to each
+layer of our cube model.
+
+\paragraph{Belief state geometry.}
+Variengien et al.\ \cite{variengien2024beliefstate} prove that optimal
+next-token predictors represent belief states linearly in their residual streams,
+even when those belief states have fractal geometry.  The cube's state space is a
+discrete dynamical system, and a model processing a cube state token should
+represent a point mass over the 88M-state space.  Our probing results can
+be read as an empirical test of their theoretical prediction.
+
+% ============================================================
+\section{Methods}
+% ============================================================
+
+\subsection{Cube Simulator and State Encoding}
+
+The $2{\times}2{\times}2$ cube has 24 stickers arranged on 6 faces.  We assign each
+face a canonical color (white top, yellow bottom, green front, blue back, orange
+left, red right) and index stickers 0--23 in reading order per face (U=0--3,
+D=4--7, F=8--11, B=12--15, L=16--19, R=20--23).  The state is a
+$(24,)$ int8 array of color indices.  We encode this as a $(144,)$ float32
+one-hot vector: $\mathbf{x} = \text{flatten}(\mathbf{I}_6[\mathbf{s}])$, where
+$\mathbf{s}$ is the state array and $\mathbf{I}_6$ is the $6 \times 6$ identity
+(one-hot matrix).
+
+The 18-move vocabulary consists of 6 faces $\times$ 3 turn types (CW, CCW,
+180°).  All move permutations are derived geometrically from face normals and
+sticker positions, not hard-coded.  This ensures correctness and makes adding
+additional cube sizes straightforward.
+
+Optimal distances are precomputed by BFS from all 24 rotationally equivalent
+solved states, producing a table of $88{,}179{,}840$ states mapping
+\texttt{state.tobytes()} $\to$ distance.  Seeding from all 24 orientations
+removes orientation bias: the solver finds the shortest path to \emph{any}
+solved orientation.  BFS takes approximately 25 minutes and is cached to disk.
+
+\subsection{Model Architecture}
+
+We implement \texttt{CubeTransformer} as a \texttt{HookedRootModule} (TransformerLens):
+
+\begin{align*}
+\mathbf{h}_0 &= \text{Linear}(144, d_\text{model})(\mathbf{x}) \\
+\mathbf{h}_\ell &= \text{TransformerBlock}(\mathbf{h}_{\ell-1}), \quad \ell = 1,\ldots,L \\
+\hat{\mathbf{y}} &= \text{Linear}(d_\text{model}, 12)(\text{LayerNorm}(\mathbf{h}_L))
+\end{align*}
+
+Default configuration: $d_\text{model}{=}128$, $L{=}4$ blocks, $n_\text{heads}{=}4$,
+MLP expansion factor 4 (${\sim}200\text{k}$ parameters).  Since the input is a
+single token, attention weights are always 1.0 and computation flows almost
+entirely through the MLP sublayers.  All hook points follow TransformerLens
+naming (\texttt{hook\_embed}, \texttt{hook\_resid\_mid},
+\texttt{hook\_resid\_post}), so \texttt{run\_with\_cache()} works out of the box.
+
+Training uses AdamW ($\text{lr}{=}3{\times}10^{-4}$, $\text{wd}{=}0.01$) with
+cosine annealing over 30 epochs, class-weighted cross-entropy to compensate for
+the heavy distance-distribution imbalance (distance 1 has 18 states; distance 9
+has $\sim$14M).  The dataset contains 50k/5k/5k train/val/test scramble
+sequences (${\sim}300\text{k}$ samples each).
+
+\subsection{Linear Probing (Phase 4)}
+
+For each residual stream checkpoint
+(\texttt{hook\_embed}, \texttt{resid\_post} layers 0--3), we train:
+\begin{itemize}
+  \item A \texttt{LogisticRegression} probe per binary feature: 6 face-solved
+        bits and 8 corner-orientation bits.
+  \item A \texttt{Ridge} regression probe for optimal distance and scramble depth.
+\end{itemize}
+Probes are fit on a held-out probe split (5k sequences not used in training),
+with 5-fold cross-validation for regularization strength.
+
+\subsection{Activation Patching (Phase 5a)}
+\label{sec:patch}
+
+We perform two types of patching experiments:
+
+\paragraph{Concept-direction ablation.}
+Given a probe weight vector $\mathbf{w}$ for concept $c$, we project it out of
+all residual stream activations:
+$\hat{\mathbf{h}} = \mathbf{h} - (\mathbf{h} \cdot \hat{\mathbf{w}})\hat{\mathbf{w}}$,
+where $\hat{\mathbf{w}} = \mathbf{w}/\|\mathbf{w}\|$.  We then measure whether
+model predictions change.  This tests whether the probe direction is
+\emph{causally active}.
+
+\paragraph{Counterfactual residual swap.}
+For pairs of states from different distance groups ($d_i$ vs.\ $d_j$), we swap
+the full residual stream at each layer and measure whether the model's distance
+prediction flips.  A 100\% flip rate indicates the residual stream at that layer
+contains all the information the model uses to distinguish the two classes.
+
+\subsection{Tuned Lens (Phase 5b)}
+
+For each layer $\ell$, we train an affine probe
+$\phi_\ell(\mathbf{h}) = \mathbf{W}_\ell \mathbf{h} + \mathbf{b}_\ell$
+to map the intermediate residual stream to the output logit space, then take the
+argmax as a layer-$\ell$ prediction.  We compare this to the logit lens (using
+the final unembedding $\mathbf{W}_U$ directly on $\mathbf{h}_\ell$) to measure
+how much basis rotation is needed to read predictions from early layers.
+
+\subsection{Sparse Autoencoder (Phase 5c)}
+
+For each layer, we train a 2-layer autoencoder with $4{\times}$ expansion (512
+features) and L1 penalty on the hidden activations to encourage sparsity:
+$\mathcal{L} = \|\mathbf{x} - \hat{\mathbf{x}}\|^2 + \lambda \|\mathbf{z}\|_1$.
+Dead features (never active on training data) are resampled from high-loss inputs
+every 1,000 steps.  We then compute Pearson correlation between each SAE feature's
+activation and known concept labels (face\_solved, optimal\_distance,
+corner\_oriented).
+
+\subsection{Text Representation Analysis (Phase 6)}
+
+Motivated by instructor feedback, we evaluate four text representations of the
+cube state as inputs to a pre-trained language model (GPT-5 / ChatGPT, accessed
+via chat interface).  The representations are:
+
+\begin{enumerate}
+  \item \textbf{face\_grid}: An unfolded net diagram showing each face's 2$\times$2
+        sticker colors.
+  \item \textbf{compact\_string}: A 24-character string, 4 characters per face in
+        U/D/F/B/L/R order, reading order within each face.
+  \item \textbf{corner\_cubies}: For each corner position, lists which color faces
+        which direction (U/D, F/B, L/R).
+  \item \textbf{piece\_identity}: Names each corner piece by its solved-state colors
+        (\texttt{W-G-R} for the piece belonging at UFR) and states its current
+        position and which face its W/Y sticker faces.  This makes the permutation
+        and orientation explicit.
+\end{enumerate}
+
+All solutions are validated by applying the model's proposed moves to the
+scrambled state in our simulator and checking \texttt{is\_solved()}.  We also
+test a chain-of-thought (CoT) variant of the piece\_identity prompt, where the
+model is instructed to reason step-by-step and conclude with
+\texttt{Solution: [moves]}.
+
+% ============================================================
+\section{Experiments and Results}
+% ============================================================
+
+\subsection{Training}
+
+The model reaches 78.5\% validation accuracy on 12-class distance classification
+(random baseline: 8.3\%) in 30 epochs.  Per-class accuracy is high for distances
+0--4 and falls for 5--10, reflecting both the class imbalance and the inherent
+difficulty of near-maximal scrambles.
+
+\subsection{Linear Probing Results}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Feature & Embed & L0 & L1 & L2 & L3 \\
+\midrule
+\texttt{face\_solved} (avg.\ acc.) & 0.98 & 0.98 & 0.97 & 0.97 & 0.98 \\
+\texttt{corner\_oriented} (avg.\ acc.) & 1.00 & 0.97 & 0.96 & 0.94 & 0.92 \\
+\texttt{optimal\_distance} (MAE) & 0.87 & 0.40 & 0.39 & 0.39 & 0.38 \\
+\bottomrule
+\end{tabular}
+\caption{Probe accuracy / MAE across residual stream checkpoints.}
+\label{tab:probing}
+\end{table}
+
+Three findings stand out.  First, \texttt{face\_solved} is 98\% decodable from
+\emph{every} layer including the raw embedding---the linear projection from
+144-dim one-hot space encodes this feature completely.  Second,
+\texttt{corner\_oriented} is perfectly recoverable at the embedding (1.00) but
+degrades monotonically to 0.92 at L3, suggesting the model actively transforms
+this feature away as it focuses on distance.  Third, the largest improvement in
+distance prediction occurs in the very first block (0.87 $\to$ 0.40 MAE), with
+minimal improvement in subsequent layers.
+
+\subsection{Activation Patching Results}
+
+\paragraph{Concept-direction ablation.}
+Projecting out the \texttt{face\_solved} probe direction at any layer produces
+\emph{zero} change in model predictions; the same holds for
+\texttt{corner\_oriented}.  Both features are epiphenomenal---encoded but not
+causally used.
+
+\paragraph{Counterfactual residual swap.}
+Swapping the full residual stream at any layer between distance groups (e.g.,
+states with optimal distance 3 vs.\ states with distance 7) produces a 100\%
+flip rate, at \emph{every} layer including the raw embedding.  This means the
+linear embedding already encodes optimal distance information that is sufficient
+to drive the final prediction.
+
+\paragraph{Implication.}
+These two results together suggest that the model's linear embedding encodes a
+near-complete representation of optimal distance.  The transformer blocks refine
+this representation for hard inputs (explaining the tuned-lens results below) but
+do not fundamentally restructure it.  The probe-readable features
+(\texttt{face\_solved}, \texttt{corner\_oriented}) are by-products of the
+representation rather than causes of the output.
+
+\subsection{Tuned Lens Results}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcccccc}
+\toprule
+Lens & Embed & L0 & L1 & L2 & L3 \\
+\midrule
+Logit lens  & 0.20 & 0.35 & 0.55 & 0.70 & 0.78 \\
+Tuned lens  & 0.60 & 0.70 & 0.75 & 0.79 & 0.81 \\
+\bottomrule
+\end{tabular}
+\caption{Classification accuracy from logit lens and tuned lens at each layer.}
+\label{tab:lens}
+\end{table}
+
+The large gap between logit lens (20\%) and tuned lens (60\%) at the embedding
+layer shows that the residual stream already contains the right information at
+layer 0, but in a rotated basis the final unembedding cannot read.  The gap
+closes by L3 (78.5\% vs.\ 81.3\%), confirming that the final block aligns the
+representation to the unembedding's reading direction.  Distances 1--2 show a
+striking phase transition at L2: near-zero accuracy before, $\sim$100\% after.
+Distances 5--9 remain hard at every layer, consistent with class imbalance in
+training.
+
+This result \emph{reconciles} the patching findings: the blocks are doing
+meaningful computation (logit-lens accuracy grows substantially), but they are
+rotating the representation rather than adding new information.  The residual
+swap's 100\% flip rate reflects that the \emph{content} is present from the
+start, while the lens gap reflects that it is not yet in the right format.
+
+\subsection{Sparse Autoencoder Results}
+
+Face and distance features are strongly monosemantic: the top SAE features at
+every layer correlate with \texttt{face\_solved} ($r \approx 0.77$--$0.87$) and
+\texttt{optimal\_distance} ($r \approx 0.81$--$0.89$).  Symmetric face pairs
+(U/D, F/B, L/R) consistently share the same top SAE features, indicating the
+model treats geometrically equivalent face pairs identically.  Corner-orientation
+features are weaker ($r \approx 0.50$--$0.63$) and strongest at the embedding
+layer, consistent with the probing result that corner orientation is encoded early
+and then transformed away.  The final layer (L3) is naturally sparser (mean
+activation count $\approx 200$ vs.\ $\approx 400$ in earlier layers), consistent
+with compression toward a decision.
+
+\subsection{Text Representation Results}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Representation & $d{=}3$ & $d{=}5$ & $d{=}7$ & Total \\
+\midrule
+face\_grid         & \checkmark & $\times$ & $\times$ & 1/3 \\
+compact\_string    & \checkmark & $\times$ & \checkmark & 2/3 \\
+corner\_cubies     & \checkmark & $\times$ & $\times$ & 1/3 \\
+\textbf{piece\_identity}  & \checkmark & \checkmark & $\times$ & \textbf{2/3} \\
+move\_sequence     & \checkmark & \checkmark & \checkmark & 3/3 \\
+piece\_identity+CoT & \checkmark & $\times$ & $\times$ & 1/3 \\
+\bottomrule
+\end{tabular}
+\caption{Solve rate by representation and optimal distance. \texttt{move\_sequence}
+is a degenerate baseline (trivial inversion); all others require state understanding.
+Tests conducted on GPT-5 (ChatGPT) via chat interface.}
+\label{tab:reps}
+\end{table}
+
+\paragraph{piece\_identity outperforms position-based representations.}
+It is the only state-based representation to consistently solve $d{=}5$
+scrambles.  The key difference from \texttt{corner\_cubies} is that it makes the
+piece permutation explicit: rather than saying ``the UFR corner has colors
+(U:G, F:R, R:W),'' it says ``the W-G-R piece, which belongs at UFR, is currently
+at DFL with W facing L.''  This gives the model direct access to the displacement
+structure.
+
+\paragraph{$d{=}7$ is a hard wall.}
+No state-based representation solved the $d{=}7$ test case reliably.  This
+suggests that $d{=}7$ requires tracking how multiple moves propagate through all
+eight corners simultaneously---a form of symbolic simulation that the model cannot
+do purely from text, regardless of representation quality.
+
+\paragraph{Chain-of-thought did not help.}
+The CoT transcript shows the model producing plausible-sounding reasoning
+(``I verified this sequence against the exact corner state you gave'') without
+actually simulating moves---the solutions it produced were wrong.  The reasoning
+is \emph{confabulatory}: narrative about a computation that is not being
+performed.  CoT with piece\_identity performed \emph{worse} than direct
+piece\_identity (1/3 vs.\ 2/3).
+
+% ============================================================
+\section{Discussion: How Results Changed Our Thinking}
+% ============================================================
+
+The project began with the hypothesis that the transformer would learn a
+hierarchical representation---earlier layers encoding low-level features
+(individual sticker colors), later layers encoding higher-level structure
+(face solved status, distance to goal).  The results tell a more nuanced story.
+
+The linear embedding already encodes optimal distance nearly completely.  This is
+not because the task is easy---78.5\% accuracy on a 12-class problem is non-trivial
+---but because the one-hot encoding of a cube state implicitly contains all
+distance information in a linearly separable form.  The 144-dim one-hot vector is
+highly redundant (physical cube states satisfy hard constraints, so most
+144-dim vectors are invalid), and the BFS distance is a smooth function of the
+sticker configuration.  The transformer learns to read this function linearly
+from the very first layer.
+
+The transformer blocks then \emph{rotate} the representation to align it with the
+unembedding direction, as evidenced by the logit/tuned-lens gap.  They do not add
+new information but do meaningful work refining the basis.  This is consistent with
+Variengien et al.'s prediction that belief states are linearly represented in
+residual streams \cite{variengien2024beliefstate}---our model is a direct
+instantiation of this, since the cube's belief state for a single-token input is
+a point mass.
+
+The text representation experiments added a complementary finding: the
+\emph{type} of information matters as much as its presence.  Position-based
+representations (face\_grid, corner\_cubies) include all the information needed
+to infer the permutation, but the model must compute that inference itself.
+piece\_identity pre-computes it.  The performance difference suggests that
+pre-trained language models can exploit explicit permutation structure even when
+they cannot simulate moves reliably.
+
+% ============================================================
+\section{Remaining Work}
+% ============================================================
+
+\begin{enumerate}
+
+  \item \textbf{Automated text representation evaluation.}  The current tests use
+        only 3 test cases per representation (one per distance level), which is
+        insufficient for statistical conclusions.  We plan to run an automated
+        evaluation using the Anthropic API (Claude Opus 4.7, as recommended by the
+        instructor) with $\geq$10 test cases per distance level, covering $d = 1$
+        through $d = 11$.  This will produce a proper solve-rate curve as a
+        function of optimal distance.
+
+  \item \textbf{Improved representations.}  We will explore whether augmenting
+        piece\_identity with explicit information about which faces each move
+        affects (e.g., annotating which pieces are in the U layer) allows the
+        model to mentally simulate single moves more reliably.  A hybrid
+        representation that provides both the state and a partial BFS hint (e.g.,
+        ``these two pieces are the hardest to place and require an anti-Sune
+        algorithm'') may substantially improve $d{=}7+$ performance.
+
+  \item \textbf{Mechanistic interpretability of the pretrained model.}  If we
+        find a representation where GPT or Claude can reliably solve $d{\leq}7$
+        scrambles, the next step is to probe the model's residual stream while it
+        processes piece\_identity inputs.  Following Variengien et al.\
+        \cite{variengien2024beliefstate}, we predict that the model's belief state
+        over cube configurations is linearly encoded---and that the piece\_identity
+        representation, by making permutation structure explicit, produces a more
+        cleanly linear belief state than position-based representations.
+
+  \item \textbf{Cross-validation of probing results.}  The current probe results
+        use a single train/val split.  We will add $k$-fold cross-validation and
+        report confidence intervals to strengthen the claims in
+        Table~\ref{tab:probing}.
+
+  \item \textbf{More ablation conditions.}  The counterfactual patching experiment
+        currently swaps the \emph{full} residual stream.  We will localize this to
+        individual components (embedding, each MLP, attention output) to identify
+        which architectural component is most causally responsible for the distance
+        representation.
+
+\end{enumerate}
+
+% ============================================================
+\section{Roadblocks}
+% ============================================================
+
+\paragraph{Venv corruption.}
+Bumping the package version from 0.1.0 to 0.2.0 without deleting the old
+\texttt{.venv} first caused a missing RECORD file warning and an incomplete
+install.  Resolved by deleting and recreating the environment.
+
+\paragraph{BFS orientation bias.}
+The initial BFS was seeded from a single solved state, so the solver treated the
+23 other valid orientations as non-solved.  Solved by seeding from all 24
+rotationally equivalent solved states; the regenerated distance table confirms
+24 states at distance 0.
+
+\paragraph{Installed-wheel path resolution.}
+When installed as a wheel, \texttt{\_\_file\_\_} resolves to
+\texttt{site-packages}, not the project root, causing the visualizer's solver
+panel to fail to locate \texttt{data/distances\_cache.pkl}.  Fixed by adding a
+\texttt{\_find\_project\_root()} function that walks up from \texttt{os.getcwd()}
+looking for \texttt{pyproject.toml}.
+
+\paragraph{API access for automated testing.}
+Testing text representations against Claude Opus 4.7 (as recommended) requires
+an Anthropic API key.  We conducted manual tests via the ChatGPT interface as a
+proxy, but the results (3 test cases per representation) have insufficient
+statistical power.  Automated testing with more cases is planned.
+
+% ============================================================
+\section{Questions for Instructor}
+% ============================================================
+
+\begin{enumerate}
+
+  \item \textbf{Scope of the text representation work.}  Should the text
+        representation experiments be framed as a central contribution (motivating
+        a shift toward interpretability of pretrained LLMs) or as a methodological
+        validation (confirming that piece\_identity is a sufficient representation
+        before using it as an input encoding)?  Concretely: does the instructor
+        see the from-scratch interpretability (Phases 4--5) as the main story, with
+        the text rep work as context, or the reverse?
+
+  \item \textbf{The confabulatory CoT finding.}  The chain-of-thought transcripts
+        show the model claiming to verify its solutions without actually doing
+        so.  Is this a finding worth reporting as a standalone result (``pre-trained
+        LLMs confabulate cube reasoning under CoT''), or is it too well-known a
+        phenomenon to be worth space in the paper?
+
+  \item \textbf{Connecting to belief state geometry.}  Variengien et al.\
+        \cite{variengien2024beliefstate} prove that optimal predictors encode
+        belief states linearly.  Our from-scratch model is an optimal predictor
+        for a task with known ground truth---so in principle the theory
+        applies directly.  Is this connection strong enough to justify making it
+        a central framing, or is it better treated as motivation rather than
+        a formal claim?
+
+  \item \textbf{Statistical power.}  Given only 3 test cases per distance level
+        for the text representation experiments, is any conclusion justified other
+        than ``piece\_identity is worth further testing''?  Or do the results
+        already warrant stronger claims?
+
+  \item \textbf{The 100\% residual-swap flip rate.}  This result (swapping the
+        full residual stream at the embedding layer causes 100\% distance-class
+        flip) is striking but may be trivially explained by the fact that the
+        one-hot encoding fully determines the distance.  Is it still worth
+        reporting, or does the trivial explanation make it uninformative?
+
+\end{enumerate}
+
+% ============================================================
+\section*{Contributions}
+% ============================================================
+
+All code, experiments, and writing were produced by Cole McGuire.  Claude Code
+(Anthropic) was used as a coding assistant for implementation and debugging
+throughout the project.
+
+% ============================================================
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+\end{document}

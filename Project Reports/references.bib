@@ -1,0 +1,132 @@
+@article{agostinelli2019deepcubea,
+  abstract = {The Rubik’s cube is a prototypical combinatorial puzzle that has a large state space with a single goal state. The goal state is unlikely to be accessed using sequences of randomly generated moves, posing unique challenges for machine learning. We solve the Rubik’s cube with DeepCubeA, a deep reinforcement learning approach that learns how to solve increasingly difficult states in reverse from the goal state without any specific domain knowledge. DeepCubeA solves 100% of all test configurations, finding a shortest path to the goal state 60.3% of the time. DeepCubeA generalizes to other combinatorial puzzles and is able to solve the 15 puzzle, 24 puzzle, 35 puzzle, 48 puzzle, Lights Out and Sokoban, finding a shortest path in the majority of verifiable cases.
+For some combinatorial puzzles, solutions can be verified to be optimal, for others, the state space is too large to be certain that a solution is optimal. A new deep learning based search heuristic performs well on the iconic Rubik’s cube and can also generalize to puzzles in which optimal solvers are intractable.},
+author = {Agostinelli, Forest and McAleer, Stephen and Shmakov, Alexander and Baldi, Pierre},
+address = {London},
+copyright = {The Author(s), under exclusive licence to Springer Nature Limited 2019},
+issn = {2522-5839},
+journal = {Nature machine intelligence},
+keywords = {Algorithms ;  Artificial intelligence ;  Combinatorial analysis ;  Engineering ;  Heuristic ;  Machine learning ;  Puzzles},
+language = {eng},
+number = {8},
+pages = {356-363},
+publisher = {Nature Publishing Group UK},
+title = {Solving the Rubik’s cube with deep reinforcement learning and search},
+volume = {1},
+year = {2019},
+}
+
+@article{takano2021selfsupervision,
+  abstract = {Existing combinatorial search methods are often complex and require some level of expertise. This work introduces a simple and efficient deep learning method for solving combinatorial problems with a predefined goal, represented by Rubik's Cube. We demonstrate that, for such problems, training a deep neural network on random scrambles branching from the goal state is sufficient to achieve near-optimal solutions. When tested on Rubik's Cube, 15 Puzzle, and 7\(\times\)7 Lights Out, our method outperformed the previous state-of-the-art method DeepCubeA, improving the trade-off between solution optimality and computational cost, despite significantly less training data. Furthermore, we investigate the scaling law of our Rubik's Cube solver with respect to model size and training data volume.},
+author = {Takano, Kyo},
+address = {Ithaca},
+copyright = {2023. This work is published under http://creativecommons.org/licenses/by/4.0/ (the “License”). Notwithstanding the ProQuest Terms and Conditions, you may use this content in accordance with the terms of the License.},
+issn = {2331-8422},
+journal = {arXiv.org},
+keywords = {Combinatorial analysis ;  Machine learning ;  Neural networks (Computer science)},
+language = {eng},
+publisher = {Cornell University Library, arXiv.org},
+title = {Self-Supervision is All You Need for Solving Rubik's Cube},
+year = {2023},
+}
+
+@article{chasmai2021cubetr,
+  author    = {Mustafa Ebrahim Chasmai},
+  title     = {{CubeTR}: Learning to Solve The Rubik's Cube Using Transformers},
+  journal   = {arXiv preprint arXiv:2111.03041},
+  year      = {2021},
+  note      = {Withdrawn by the author},
+}
+
+@article{gupta2024worldmodels,
+  author    = {Prakhar Gupta and Henry Conklin and Sarah-Jane Leslie and Andrew Lee},
+  title     = {Better World Models Can Lead to Better Post-Training Performance},
+  journal   = {arXiv preprint arXiv:2512.03400},
+  year      = {2024},
+}
+
+@article{alain2016probes,
+  abstract = {Neural network models have a reputation for being black boxes. We propose a new method to understand better the roles and dynamics of the intermediate layers. This has direct consequences on the design of such models and it enables the expert to be able to justify certain heuristics (such as the auxiliary heads in the Inception model). Our method uses linear classifiers, referred to as "probes", where a probe can only use the hidden units of a given intermediate layer as discriminating features. Moreover, these probes cannot affect the training phase of a model, and they are generally added after training. They allow the user to visualize the state of the model at multiple steps of training. We demonstrate how this can be used to develop a better intuition about a known model and to diagnose potential problems.},
+author = {Alain, Guillaume and Bengio, Yoshua},
+address = {Ithaca},
+copyright = {2016. This work is published under http://arxiv.org/licenses/nonexclusive-distrib/1.0/ (the “License”). Notwithstanding the ProQuest Terms and Conditions, you may use this content in accordance with the terms of the License.},
+issn = {2331-8422},
+journal = {arXiv.org},
+keywords = {Classifiers ;  Training},
+language = {eng},
+publisher = {Cornell University Library, arXiv.org},
+title = {Understanding intermediate layers using linear classifier probes},
+year = {2016},
+}
+
+@article{belrose2023tunedlens,
+  abstract = {We analyze transformers from the perspective of iterative inference, seeking to understand how model predictions are refined layer by layer. To do so, we train an affine probe for each block in a frozen pretrained model, making it possible to decode every hidden state into a distribution over the vocabulary. Our method, the tuned lens, is a refinement of the earlier "logit lens" technique, which yielded useful insights but is often brittle. We test our method on various autoregressive language models with up to 20B parameters, showing it to be more predictive, reliable and unbiased than the logit lens. With causal experiments, we show the tuned lens uses similar features to the model itself. We also find the trajectory of latent predictions can be used to detect malicious inputs with high accuracy. All code needed to reproduce our results can be found at https://github.com/AlignmentResearch/tuned-lens.},
+author = {Belrose, Nora and Ostrovsky, Igor and McKinney, Lev and Furman, Zach and Smith, Logan and Halawi, Danny and Biderman, Stella and Steinhardt, Jacob},
+address = {Ithaca},
+copyright = {2025. This work is published under http://creativecommons.org/licenses/by/4.0/ (the “License”). Notwithstanding the ProQuest Terms and Conditions, you may use this content in accordance with the terms of the License.},
+issn = {2331-8422},
+journal = {arXiv.org},
+language = {eng},
+publisher = {Cornell University Library, arXiv.org},
+title = {Eliciting Latent Predictions from Transformers with the Tuned Lens},
+year = {2025},
+}
+
+@article{meng2022locatingfactual,
+  author    = {Kevin Meng and David Bau and Alex Andonian and Yonatan Belinkov},
+  title     = {Locating and Editing Factual Associations in {GPT}},
+  journal   = {Advances in Neural Information Processing Systems},
+  volume    = {35},
+  year      = {2022},
+}
+
+@article{nanda2023grokking,
+  author    = {Neel Nanda and Lawrence Chan and Tom Lieberum and Jess Smith and Jacob Steinhardt},
+  title     = {Progress measures for grokking via mechanistic interpretability},
+  journal   = {arXiv preprint arXiv:2301.05217},
+  year      = {2023},
+}
+
+@article{bricken2023monosemantic,
+  author    = {Trenton Bricken and Adly Templeton and Joshua Batson and Brian Chen and
+               Adam Jermyn and Tom Conerly and Nick Turner and Cem Anil and Carson Denison and
+               Amanda Askell and Robert Lasenby and Yifan Wu and Shauna Kravec and
+               Nicholas Schiefer and Tim Maxwell and Nicholas Joseph and Zac Hatfield-Dodds and
+               Alex Tamkin and Karina Nguyen and Brayden McLaughlin and Josiah E. Burke and
+               Tristan Hume and Shan Carter and Tom Henighan and Chris Olah},
+  title     = {Towards Monosemanticity: Decomposing Language Models With Dictionary Learning},
+  journal   = {Transformer Circuits Thread},
+  year      = {2023},
+  note      = {\url{https://transformer-circuits.pub/2023/monosemantic-features}},
+}
+
+@article{variengien2024beliefstate,
+  author    = {Alan Variengien and Eric Winsor and Tom Shearer and Zac Hatfield-Dodds},
+  title     = {Transformers Represent Belief State Geometry in their Residual Stream},
+  journal   = {arXiv preprint arXiv:2405.15943},
+  year      = {2024},
+}
+
+@misc{nostalgebraist2020logitlens,
+  author    = {nostalgebraist},
+  title     = {interpreting {GPT}: the logit lens},
+  year      = {2020},
+  howpublished = {\url{https://www.lesswrong.com/posts/AcKRB8wDpdaN6v6ru/}},
+}
+
+@article{belinkov2022probing,
+  abstract = {Probing classifiers have emerged as one of the prominent methodologies for interpreting and analyzing deep neural network models of natural language processing. The basic idea is simple—a classifier is trained to predict some linguistic property from a model’s representations—and has been used to examine a wide variety of models and properties. However, recent studies have demonstrated various methodological limitations of this approach. This squib critically reviews the probing classifiers framework, highlighting their promises, shortcomings, and advances.},
+author = {Belinkov, Yonatan},
+address = {One Broadway, 12th Floor, Cambridge, Massachusetts 02142, USA},
+copyright = {2022. This work is published under https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode (the “License”). Notwithstanding the ProQuest Terms and Conditions, you may use this content in accordance with the terms of the License.},
+issn = {0891-2017},
+journal = {Computational linguistics - Association for Computational Linguistics},
+keywords = {Classifiers ;  Natural Language Processing ;  Neural networks (Computer science) ;  Property},
+language = {eng},
+number = {1},
+pages = {207-219},
+publisher = {MIT Press},
+title = {Probing Classifiers: Promises, Shortcomings, and Advances},
+volume = {48},
+year = {2022},
+}

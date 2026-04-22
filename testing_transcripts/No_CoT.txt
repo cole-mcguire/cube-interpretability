@@ -1,0 +1,319 @@
+User:
+You are an expert at solving 2x2x2 Rubik's cubes.
+
+Move notation:
+- U/D/F/B/L/R = top/bottom/front/back/left/right face
+- No suffix = 90° clockwise (when looking at that face head-on)
+- ' suffix = 90° counterclockwise
+- 2 suffix = 180°
+
+Solved = each face is a single color.
+Standard solved state: White top (U), Green front (F), Red right (R), Orange left (L), Blue back (B), Yellow bottom (D).
+
+Respond with ONLY the solution moves separated by spaces. No explanation.
+
+Assistant:
+Please provide the scramble or current cube state.
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each face shown as viewed from outside the cube.
+
+        U (top):
+        G G
+        G G
+
+L (left)    F (front)   R (right)   B (back)
+Y W          O R          W Y         R O
+Y W         O R         W Y         R O
+
+        D (bottom):
+        B B
+        B B
+
+Assistant:
+R2 B F D' U'
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:GGGG D:BBBB F:OROR B:RORO L:YWYW R:WYWY
+
+Assistant:
+F B U D R2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each corner shows which color is visible on each face at that position.
+
+Solved reference:
+  UFR:(U:W F:G R:R)  UFL:(U:W F:G L:O)  UBL:(U:W B:B L:O)  UBR:(U:W B:B R:R)
+  DFR:(D:Y F:G R:R)  DFL:(D:Y F:G L:O)  DBL:(D:Y B:B L:O)  DBR:(D:Y B:B R:R)
+
+Current state:
+  UFR:(U:G F:R R:W)
+  UFL:(U:G F:O L:W)
+  UBL:(U:G B:O L:Y)
+  UBR:(U:G B:R R:Y)
+  DFR:(D:B F:R R:W)
+  DFL:(D:B F:O L:W)
+  DBL:(D:B B:O L:Y)
+  DBR:(D:B B:R R:Y)
+
+Assistant:
+F B U' D' R2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+8 corner pieces, each named [W/Y]-[F/B-color]-[L/R-color] as in the solved state.
+Goal: every piece at its home position with its W or Y sticker facing U or D.
+
+Solved reference:
+  W-G-R@UFR  W-G-O@UFL  W-B-O@UBL  W-B-R@UBR
+  Y-G-R@DFR  Y-G-O@DFL  Y-B-O@DBL  Y-B-R@DBR
+
+Current state (piece → current position, which face its W/Y sticker faces):
+  W-G-R: home (UFR), but W faces R — needs a twist
+  W-G-O: home (UFL), but W faces L — needs a twist
+  W-B-O: at DFL, W faces L — needs to move to UBL + twist
+  W-B-R: at DFR, W faces R — needs to move to UBR + twist
+  Y-G-R: at UBR, Y faces R — needs to move to DFR + twist
+  Y-G-O: at UBL, Y faces L — needs to move to DFL + twist
+  Y-B-O: home (DBL), but Y faces L — needs a twist
+  Y-B-R: home (DBR), but Y faces R — needs a twist
+
+Assistant:
+F B U' D' R2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Starting from solved, this scramble was applied:
+
+  L D U' B' R2 B2 L2
+
+Assistant:
+L2 B2 R2 B U D' L'
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+8 corner pieces, each named [W/Y]-[F/B-color]-[L/R-color] as in the solved state.
+Goal: every piece at its home position with its W or Y sticker facing U or D.
+
+Solved reference:
+  W-G-R@UFR  W-G-O@UFL  W-B-O@UBL  W-B-R@UBR
+  Y-G-R@DFR  Y-G-O@DFL  Y-B-O@DBL  Y-B-R@DBR
+
+Current state (piece → current position, which face its W/Y sticker faces):
+  W-G-R: at DBR, W faces R — needs to move to UFR + twist
+  W-G-O: at DFR, W faces R — needs to move to UFL + twist
+  W-B-O: at UFR, W faces F — needs to move to UBL + twist
+  W-B-R: at UFL, W faces L — needs to move to UBR + twist
+  Y-G-R: at UBL, Y faces U ✓ — needs to move home (DFR)
+  Y-G-O: at DBL, Y faces L — needs to move to DFL + twist
+  Y-B-O: at UBR, Y faces B — needs to move to DBL + twist
+  Y-B-R: at DFL, Y faces F — needs to move to DBR + twist
+
+Assistant:
+U' B R2 F' R' F'
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each face shown as viewed from outside the cube.
+
+        U (top):
+        Y O
+        B O
+
+L (left)    F (front)   R (right)   B (back)
+G W          R W          B B         Y R
+Y B         Y O         W W         R G
+
+        D (bottom):
+        R G
+        O G
+
+Assistant:
+U B' R2 F R' F
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each corner shows which color is visible on each face at that position.
+
+Solved reference:
+  UFR:(U:W F:G R:R)  UFL:(U:W F:G L:O)  UBL:(U:W B:B L:O)  UBR:(U:W B:B R:R)
+  DFR:(D:Y F:G R:R)  DFL:(D:Y F:G L:O)  DBL:(D:Y B:B L:O)  DBR:(D:Y B:B R:R)
+
+Current state:
+  UFR:(U:O F:W R:B)
+  UFL:(U:B F:R L:W)
+  UBL:(U:Y B:R L:G)
+  UBR:(U:O B:Y R:B)
+  DFR:(D:G F:O R:W)
+  DFL:(D:R F:Y L:B)
+  DBL:(D:O B:G L:Y)
+  DBR:(D:G B:R R:W)
+
+Assistant:
+R' B2 L B D U
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:YOBO D:RGOG F:RWYO B:YRRG L:GWYB R:BBWW
+
+Assistant:
+U B R2 F' R' F'
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Starting from solved, this scramble was applied:
+
+  R' B2 L F R F2 B F D
+
+Assistant:
+D' F' B' F2 R' F' L' B2 R
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each face shown as viewed from outside the cube.
+
+        U (top):
+        B B
+        G G
+
+L (left)    F (front)   R (right)   B (back)
+R R          W Y          R O         W W
+R Y         B O         W G         Y Y
+
+        D (bottom):
+        O G
+        B O
+
+Assistant:
+L2 F' U L' D F U2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Each corner shows which color is visible on each face at that position.
+
+Solved reference:
+  UFR:(U:W F:G R:R)  UFL:(U:W F:G L:O)  UBL:(U:W B:B L:O)  UBR:(U:W B:B R:R)
+  DFR:(D:Y F:G R:R)  DFL:(D:Y F:G L:O)  DBL:(D:Y B:B L:O)  DBR:(D:Y B:B R:R)
+
+Current state:
+  UFR:(U:G F:Y R:R)
+  UFL:(U:G F:W L:R)
+  UBL:(U:B B:W L:R)
+  UBR:(U:B B:W R:O)
+  DFR:(D:G F:O R:W)
+  DFL:(D:O F:B L:Y)
+  DBL:(D:B B:Y L:R)
+  DBR:(D:O B:Y R:G)
+
+Assistant:
+L2 F' U L D F U2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:BBGG D:OGBO F:WYBO B:WWYY L:RRRY R:ROWG
+
+Assistant:
+L2 F' U' L D' F U2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+8 corner pieces, each named [W/Y]-[F/B-color]-[L/R-color] as in the solved state.
+Goal: every piece at its home position with its W or Y sticker facing U or D.
+
+Solved reference:
+  W-G-R@UFR  W-G-O@UFL  W-B-O@UBL  W-B-R@UBR
+  Y-G-R@DFR  Y-G-O@DFL  Y-B-O@DBL  Y-B-R@DBR
+
+Current state (piece → current position, which face its W/Y sticker faces):
+  W-G-R: at UFL, W faces F — needs to move to UFR + twist
+  W-G-O: at DFR, W faces R — needs to move to UFL + twist
+  W-B-O: at UBR, W faces B — needs to move to UBL + twist
+  W-B-R: at UBL, W faces B — needs to move to UBR + twist
+  Y-G-R: at UFR, Y faces F — needs to move to DFR + twist
+  Y-G-O: at DBR, Y faces B — needs to move to DFL + twist
+  Y-B-O: at DFL, Y faces L — needs to move to DBL + twist
+  Y-B-R: at DBL, Y faces B — needs to move to DBR + twist
+
+Assistant:
+F2 U' F U' F' L2 F' D2
+
+--------------------------------------------------
+
+User:
+Solve this 2x2x2 cube:
+
+Standard orientation: White on top (U), Green in front (F)
+Starting from solved, this scramble was applied:
+
+  D2 F B2 L' R2 F U2 R B L' U'
+
+Assistant:
+U L B' R' U2 F' R2 L B2 F' D2
