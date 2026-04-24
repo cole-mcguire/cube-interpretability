@@ -6,13 +6,13 @@ ready to copy-paste into a chat interface (Claude.ai, ChatGPT, etc.).
 Also prints the known optimal solution for validation.
 """
 
-import os, pickle, sys
+import os, sys
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from cube import Cube, MOVE_NAMES, CORNER_STICKERS, IDX_TO_COLOR, SOLVED_STATE, solve
+from cube import Cube, DistanceTable, MOVE_NAMES, CORNER_STICKERS, IDX_TO_COLOR, SOLVED_STATE, solve
 
-CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "distances_cache.pkl")
+CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "distances.npz")
 
 FACE_LABELS = ["U", "D", "F", "B", "L", "R"]
 POS_NAMES   = ["UFR", "UFL", "UBL", "UBR", "DFR", "DFL", "DBL", "DBR"]
@@ -221,8 +221,7 @@ def divider(label=""):
 
 def run():
     print("Loading BFS distance table...")
-    with open(CACHE_PATH, "rb") as f:
-        distances = pickle.load(f)
+    distances = DistanceTable.load(CACHE_PATH)
     print(f"  {len(distances):,} states loaded\n")
 
     rng = np.random.default_rng(42)

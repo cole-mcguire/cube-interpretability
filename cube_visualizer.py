@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import math
 import os
-import pickle
 import threading
 import tkinter as tk
 from tkinter import ttk
 
 import numpy as np # pyright: ignore[reportMissingImports]
 
-from cube import Cube, IDX_TO_COLOR, MOVE_NAMES, solve
+from cube import Cube, DistanceTable, IDX_TO_COLOR, MOVE_NAMES, solve
 
 
 def _find_project_root() -> str:
@@ -27,7 +26,7 @@ def _find_project_root() -> str:
     return os.getcwd()
 
 _PROJECT_ROOT = _find_project_root()
-_DISTANCES_CACHE = os.path.join(_PROJECT_ROOT, "data", "distances_cache.pkl")
+_DISTANCES_CACHE = os.path.join(_PROJECT_ROOT, "data", "distances.npz")
 
 
 FACE_ORDER = ["U", "D", "F", "B", "L", "R"]
@@ -396,12 +395,11 @@ class CubeVisualizer:
     def _load_distances(self) -> None:
         cache = _DISTANCES_CACHE
         try:
-            with open(cache, "rb") as f:
-                self._distances = pickle.load(f)
+            self._distances = DistanceTable.load(cache)
             self.root.after(0, self._on_distances_loaded)
         except FileNotFoundError:
             self.root.after(0, lambda: self._solve_status_var.set(
-                "Error: data/distances_cache.pkl not found.\nRun: uv run cube-dataset"
+                "Error: data/distances.npz not found.\nRun: uv run cube-dataset"
             ))
             self.root.after(0, lambda: self._solve_btn.config(state="normal"))
             self._distances_loading = False

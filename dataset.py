@@ -27,32 +27,28 @@ import time
 from pathlib import Path
 from typing import Optional
 
-import pickle
-
 import numpy as np
 
-from cube import MOVE_NAMES, NUM_MOVES, compute_optimal_distances, generate_dataset
+from cube import MOVE_NAMES, NUM_MOVES, DistanceTable, compute_optimal_distances, generate_dataset
 
-_DISTANCES: dict | None = None
-_DISTANCES_CACHE = Path("data/distances_cache.pkl")
+_DISTANCES: Optional[DistanceTable] = None
+_DISTANCES_CACHE = Path("data/distances.npz")
 
 
-def _get_distances() -> dict:
+def _get_distances() -> DistanceTable:
     """Return the BFS distance table, computing and caching it on first call."""
     global _DISTANCES
     if _DISTANCES is not None:
         return _DISTANCES
     if _DISTANCES_CACHE.exists():
         print(f"Loading cached distances ({_DISTANCES_CACHE})...", end=" ", flush=True)
-        with open(_DISTANCES_CACHE, "rb") as f:
-            _DISTANCES = pickle.load(f)
+        _DISTANCES = DistanceTable.load(_DISTANCES_CACHE)
         print(f"{len(_DISTANCES):,} states")
     else:
-        print("Computing optimal distances via BFS (~25 min, cached afterward)...")
+        print("Computing optimal distances via BFS (~25–30 min, cached afterward)...")
         _DISTANCES = compute_optimal_distances(verbose=True)
         _DISTANCES_CACHE.parent.mkdir(parents=True, exist_ok=True)
-        with open(_DISTANCES_CACHE, "wb") as f:
-            pickle.dump(_DISTANCES, f)
+        _DISTANCES.save(_DISTANCES_CACHE)
         print(f"Cached to {_DISTANCES_CACHE}")
     return _DISTANCES
 

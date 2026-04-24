@@ -67,7 +67,7 @@ cube-interpretability/
 │   ├── Cube                State machine: apply_move, scramble, encode/decode
 │   ├── solve()             Optimal BFS-table solver → list of move indices
 │   ├── generate_scramble_solution_pairs()
-│   ├── compute_optimal_distances()   Full BFS (~25 min, cached)
+│   ├── compute_optimal_distances()   Full BFS (~25–30 min, cached as data/distances.npz)
 │   └── generate_dataset()  Scramble sequences with labels
 │
 ├── cube_visualizer.py      Interactive tkinter visualizer
@@ -110,7 +110,7 @@ cube-interpretability/
 │   └── proposal.tex        Original project proposal
 │
 ├── data/                   (gitignored — regenerate with uv run cube-dataset)
-│   ├── distances_cache.pkl BFS table: state bytes → optimal distance
+│   ├── distances.npz       BFS table: sorted uint64 packed keys + int8 distances (mmap-loaded)
 │   ├── train.npz
 │   ├── val.npz
 │   └── test.npz
@@ -157,7 +157,7 @@ Requires [uv](https://docs.astral.sh/uv/).
 # Install dependencies
 uv sync
 
-# Generate dataset (computes BFS distances on first run, ~25 min; cached afterward)
+# Generate dataset (computes BFS distances on first run, ~25–30 min; cached afterward)
 uv run cube-dataset
 
 # Train the transformer (~30 epochs, ~5 min on MPS/GPU)
@@ -213,7 +213,7 @@ Each `.npz` split contains:
 
 Default split sizes: 50k / 5k / 5k sequences → ~300k / 30k / 30k samples.
 
-The BFS over the full 88M-state space (24 × 3.7M, since global orientation isn't fixed) takes ~25 minutes and is cached to `data/distances_cache.pkl`.
+The BFS reaches the full 88M-state space from a single solved seed (face moves connect every rotationally-equivalent solved state). The one-time BFS takes ~25–30 min; the result is packed into a sorted `(uint64, int8)` array pair and written to `data/distances.npz` (~760 MB). Subsequent loads are memory-mapped and effectively instant (~0.1 s), and lookup is `O(log N)` via `np.searchsorted`.
 
 ## Move vocabulary
 

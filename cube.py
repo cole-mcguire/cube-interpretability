@@ -221,6 +221,75 @@ SOLVED_SYMMETRY_STATES = np.stack(
     [SOLVED_STATE[permutation] for permutation in CUBE_ROTATION_PERMUTATIONS]
 )
 
+# Base-6 packing: a (24,) state in [0..5] fits in uint64 since 6**24 ≈ 4.74e18 < 2**64 ≈ 1.84e19.
+_POWERS_OF_6 = (6 ** np.arange(NUM_STICKERS, dtype=np.uint64)).astype(np.uint64)
+
+
+def pack_state(state: np.ndarray) -> int:
+    """Pack a (24,) int8 state with values in [0..5] to a unique uint64."""
+    return int((np.asarray(state, dtype=np.uint64) * _POWERS_OF_6).sum())
+
+
+def _pack_states_batch(states: np.ndarray) -> np.ndarray:
+    """Vectorized pack_state over a (N, 24) array."""
+    return (states.astype(np.uint64) * _POWERS_OF_6).sum(axis=1)
+
+
+class DistanceTable:
+    """Dict-like wrapper over sorted uint64 keys + int8 distances.
+
+    Replaces the old dict[bytes, int] cache. Backed by two numpy arrays that
+    can be memory-mapped from .npz, so load is effectively instant even for
+    88M entries (vs ~30–60s for the old pickle.load path).
+
+    Accepts bytes, numpy arrays, or already-packed ints as keys, so call sites
+    doing `distances[state.tobytes()]` or `distances.get(state.tobytes())`
+    keep working.
+    """
+
+    def __init__(self, keys: np.ndarray, values: np.ndarray):
+        self._keys = np.asarray(keys, dtype=np.uint64)
+        self._values = np.asarray(values, dtype=np.int8)
+
+    def _as_packed(self, key) -> int:
+        if isinstance(key, (bytes, bytearray, memoryview)):
+            return pack_state(np.frombuffer(bytes(key), dtype=np.int8))
+        if isinstance(key, np.ndarray):
+            return pack_state(key)
+        return int(key)
+
+    def __getitem__(self, key) -> int:
+        k = self._as_packed(key)
+        idx = int(np.searchsorted(self._keys, np.uint64(k)))
+        if idx < len(self._keys) and int(self._keys[idx]) == k:
+            return int(self._values[idx])
+        raise KeyError(key)
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key) -> bool:
+        return self.get(key, None) is not None
+
+    def __len__(self) -> int:
+        return int(len(self._keys))
+
+    def values(self):
+        return (int(v) for v in self._values)
+
+    @classmethod
+    def load(cls, path) -> "DistanceTable":
+        """Memory-map an .npz file saved by `save()`."""
+        data = np.load(path, mmap_mode="r")
+        return cls(data["keys"], data["values"])
+
+    def save(self, path) -> None:
+        """Write to .npz. Callers should use a `.npz` extension."""
+        np.savez(path, keys=self._keys, values=self._values)
+
 CORNER_STICKERS = [
     (3, 9, 20),   # UFR
     (2, 8, 17),   # UFL
@@ -396,16 +465,18 @@ class Cube:
 # Optimal distance (BFS)
 # ---------------------------------------------------------------------------
 
-def compute_optimal_distances(verbose: bool = True) -> dict[bytes, int]:
+def compute_optimal_distances(verbose: bool = True) -> DistanceTable:
     """
-    BFS from all 24 rotationally equivalent solved states to compute the
-    optimal (half-turn metric) distance for every reachable cube state.
+    BFS over every state reachable by face moves from the solved cube (~88M
+    states). Returns a `DistanceTable` (sorted uint64 packed keys + int8
+    distances) that serialises to a compact .npz file and loads via mmap.
 
-    Seeding from all 24 orientations means the solver finds the shortest path
-    to *any* solved orientation, removing bias toward a specific face alignment.
+    Seeding from `SOLVED_STATE` alone is enough: face moves already connect
+    every rotationally-equivalent solved state, so starting from all 24 would
+    add the same entries a second time without growing the reachable set.
 
-    Returns a dict mapping state.tobytes() → distance (0–11).
-    Runtime: ~2–4 minutes; call once and cache the result.
+    Runtime: ~25–30 min depending on machine; peak memory during the BFS is
+    ~15 GB (the intermediate dict). Call once and cache.
     """
     from collections import deque
     import time
@@ -413,11 +484,9 @@ def compute_optimal_distances(verbose: bool = True) -> dict[bytes, int]:
     distances: dict[bytes, int] = {}
     queue: deque[bytes] = deque()
 
-    for sym_state in SOLVED_SYMMETRY_STATES:
-        key = sym_state.tobytes()
-        if key not in distances:
-            distances[key] = 0
-            queue.append(key)
+    key = SOLVED_STATE.tobytes()
+    distances[key] = 0
+    queue.append(key)
 
     t0 = time.perf_counter()
     while queue:
@@ -441,14 +510,28 @@ def compute_optimal_distances(verbose: bool = True) -> dict[bytes, int]:
                 distances[new_key] = d + 1
                 queue.append(new_key)
 
+    bfs_seconds = time.perf_counter() - t0
     if verbose:
         from collections import Counter
         counts = Counter(distances.values())
         for dist in sorted(counts):
-            print(f"  distance {dist:2d}: {counts[dist]:>8,} states")
-        print(f"  total: {len(distances):,} states  ({time.perf_counter() - t0:.1f}s)")
+            print(f"  distance {dist:2d}: {counts[dist]:>12,} states")
+        print(f"  total: {len(distances):,} states  ({bfs_seconds:.1f}s)")
 
-    return distances
+    # Convert the dict to sorted (uint64, int8) arrays.
+    # b''.join + frombuffer is all C-speed; this is much faster than a Python loop.
+    if verbose:
+        print("  packing and sorting for on-disk format...", end=" ", flush=True)
+    t_pack = time.perf_counter()
+    n = len(distances)
+    state_array = np.frombuffer(b"".join(distances.keys()), dtype=np.int8).reshape(n, NUM_STICKERS)
+    values = np.fromiter(distances.values(), dtype=np.int8, count=n)
+    packed = _pack_states_batch(state_array)
+    order = np.argsort(packed)
+    table = DistanceTable(packed[order], values[order])
+    if verbose:
+        print(f"{time.perf_counter() - t_pack:.1f}s")
+    return table
 
 
 # ---------------------------------------------------------------------------
@@ -459,7 +542,7 @@ def generate_dataset(
     n_sequences: int,
     max_scramble_depth: int = 11,
     rng: Optional[np.random.Generator] = None,
-    distances: Optional[dict] = None,
+    distances: Optional["DistanceTable"] = None,
 ) -> dict:
     """
     Generate a dataset of (state, next_move) pairs from random scramble sequences.
@@ -515,7 +598,7 @@ def generate_dataset(
 # Solver
 # ---------------------------------------------------------------------------
 
-def solve(state: np.ndarray, distances: dict[bytes, int]) -> list[int]:
+def solve(state: np.ndarray, distances: "DistanceTable") -> list[int]:
     """
     Return the optimal (HTM) solution sequence for a given cube state.
 
@@ -525,7 +608,7 @@ def solve(state: np.ndarray, distances: dict[bytes, int]) -> list[int]:
 
     Args:
         state:     (24,) int8 array of color indices (from Cube.state)
-        distances: dict mapping state.tobytes() → HTM distance (from compute_optimal_distances)
+        distances: DistanceTable from compute_optimal_distances / DistanceTable.load
 
     Returns:
         List of move indices (0–17) that solve the cube.  Empty list if already solved.
@@ -562,7 +645,7 @@ def solve(state: np.ndarray, distances: dict[bytes, int]) -> list[int]:
 
 def generate_scramble_solution_pairs(
     n_pairs: int,
-    distances: dict[bytes, int],
+    distances: "DistanceTable",
     max_scramble: int = 11,
     rng: Optional[np.random.Generator] = None,
 ) -> list[tuple[list[int], list[int]]]:
