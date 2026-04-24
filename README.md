@@ -2,6 +2,8 @@
 
 A mechanistic interpretability project using the 2×2×2 Rubik's cube as a controlled setting. We train a small transformer on optimal-distance classification, then probe and patch its residual stream to understand what it learns and how. A parallel line of work evaluates text representations of cube state for pre-trained LLM reasoning.
 
+**Progress report:** [`docs/progress_report.pdf`](docs/progress_report.pdf) (source: [`docs/progress_report.tex`](docs/progress_report.tex)).
+
 ## What this project does
 
 1. **Simulates** a 2×2×2 cube with a one-hot state encoding (24 stickers × 6 colors = 144-dim vector)
@@ -101,7 +103,7 @@ cube-interpretability/
 │   ├── No_CoT.txt          GPT responses: all 5 representations × 3 distances
 │   └── CoT.txt             GPT responses: piece_identity + CoT × 3 distances
 │
-├── Project Reports/        Write-up and bibliography
+├── docs/                   Write-up and bibliography
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
