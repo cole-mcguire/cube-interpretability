@@ -184,8 +184,9 @@ class CubeVisualizer:
         self.history_var = tk.StringVar()
         self.scramble_length_var = tk.IntVar(value=12)
 
-        self._distances: dict | None = None
+        self._distances: DistanceTable | None = None
         self._distances_loading = False
+        self._load_error: str | None = None
         self._solution_moves: list[int] = []
         self._solution_step = 0
         self._playing = False
@@ -380,9 +381,11 @@ class CubeVisualizer:
             if self._distances_loading:
                 return
             self._distances_loading = True
+            self._load_error = None
             self._solve_btn.config(state="disabled")
             self._solve_status_var.set("Loading distance table…")
             threading.Thread(target=self._load_distances, daemon=True).start()
+            self.root.after(200, self._check_load_result)
             return
 
         moves = solve(self.cube.state, self._distances)
@@ -393,24 +396,32 @@ class CubeVisualizer:
         self._play_btn.config(state="normal" if moves else "disabled")
 
     def _load_distances(self) -> None:
-        cache = _DISTANCES_CACHE
+        # Runs on a background thread. Communicates back via shared instance
+        # variables only — no root.after() calls, which are not reliable from
+        # non-main threads on macOS Tk 9. The main thread polls via
+        # _check_load_result (scheduled in _on_solve).
         try:
-            self._distances = DistanceTable.load(cache)
+            self._distances = DistanceTable.load(_DISTANCES_CACHE)
         except FileNotFoundError:
-            self._distances_loading = False
-            self.root.after(0, lambda: self._solve_status_var.set(
+            self._load_error = (
                 "Error: data/distances.npz not found.\nRun: uv run cube-dataset"
-            ))
-            self.root.after(0, lambda: self._solve_btn.config(state="normal"))
-            return
+            )
         except Exception as exc:
-            # Surface the real error instead of leaving the UI stuck on "Loading...".
+            self._load_error = (
+                f"Error loading {os.path.basename(_DISTANCES_CACHE)}: "
+                f"{type(exc).__name__}: {exc}"
+            )
+
+    def _check_load_result(self) -> None:
+        # Called from the main loop every 200ms until the background load finishes.
+        if self._load_error is not None:
             self._distances_loading = False
-            message = f"Error loading {os.path.basename(cache)}: {type(exc).__name__}: {exc}"
-            self.root.after(0, lambda m=message: self._solve_status_var.set(m))
-            self.root.after(0, lambda: self._solve_btn.config(state="normal"))
-            return
-        self.root.after(0, self._on_distances_loaded)
+            self._solve_status_var.set(self._load_error)
+            self._solve_btn.config(state="normal")
+        elif self._distances is not None:
+            self._on_distances_loaded()
+        else:
+            self.root.after(200, self._check_load_result)
 
     def _on_distances_loaded(self) -> None:
         self._distances_loading = False
