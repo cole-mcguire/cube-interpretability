@@ -396,13 +396,21 @@ class CubeVisualizer:
         cache = _DISTANCES_CACHE
         try:
             self._distances = DistanceTable.load(cache)
-            self.root.after(0, self._on_distances_loaded)
         except FileNotFoundError:
+            self._distances_loading = False
             self.root.after(0, lambda: self._solve_status_var.set(
                 "Error: data/distances.npz not found.\nRun: uv run cube-dataset"
             ))
             self.root.after(0, lambda: self._solve_btn.config(state="normal"))
+            return
+        except Exception as exc:
+            # Surface the real error instead of leaving the UI stuck on "Loading...".
             self._distances_loading = False
+            message = f"Error loading {os.path.basename(cache)}: {type(exc).__name__}: {exc}"
+            self.root.after(0, lambda m=message: self._solve_status_var.set(m))
+            self.root.after(0, lambda: self._solve_btn.config(state="normal"))
+            return
+        self.root.after(0, self._on_distances_loaded)
 
     def _on_distances_loaded(self) -> None:
         self._distances_loading = False
