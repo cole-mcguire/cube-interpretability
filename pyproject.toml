@@ -29,10 +29,11 @@ build-backend = "hatchling.build"
 "dataset.py" = "dataset.py"
 "model.py" = "model.py"
 "train.py" = "train.py"
-"probe.py" = "probe.py"
-"patch.py" = "patch.py"
-"tuned_lens.py" = "tuned_lens.py"
-"sae.py" = "sae.py"
+"analysis/__init__.py" = "analysis/__init__.py"
+"analysis/probe.py" = "analysis/probe.py"
+"analysis/patch.py" = "analysis/patch.py"
+"analysis/tuned_lens.py" = "analysis/tuned_lens.py"
+"analysis/sae.py" = "analysis/sae.py"
 
 [dependency-groups]
 dev = [

@@ -80,16 +80,14 @@ cube-interpretability/
 │                           d_model=128, n_layers=4, n_heads=4 (~200k params)
 ├── train.py                AdamW + cosine annealing, class-weighted CE
 │
-├── probe.py                Phase 4 — linear probes on residual stream
-│                           LogisticRegression (face_solved, corner_oriented)
-│                           Ridge regression (optimal_distance, scramble_depth)
-│
-├── patch.py                Phase 5a — activation patching
-│                           Concept-direction ablation + counterfactual swap
-│
-├── tuned_lens.py           Phase 5b — logit lens & trained per-layer affine lens
-│
-├── sae.py                  Phase 5c — sparse autoencoder (4× expansion, 512 features)
+├── analysis/               Post-training interpretability passes (run with python -m analysis.<name>)
+│   ├── probe.py            Phase 4 — linear probes on residual stream
+│   │                       LogisticRegression (face_solved, corner_oriented)
+│   │                       Ridge regression (optimal_distance, scramble_depth)
+│   ├── patch.py            Phase 5a — activation patching
+│   │                       Concept-direction ablation + counterfactual swap
+│   ├── tuned_lens.py       Phase 5b — logit lens & trained per-layer affine lens
+│   └── sae.py              Phase 5c — sparse autoencoder (4× expansion, 512 features)
 │                           Dead-feature resampling, Pearson alignment analysis
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
@@ -164,16 +162,16 @@ uv run cube-dataset
 uv run cube-train
 
 # Phase 4: linear probing
-uv run python probe.py
+uv run python -m analysis.probe
 
 # Phase 5a: activation patching
-uv run python patch.py
+uv run python -m analysis.patch
 
 # Phase 5b: logit lens + tuned lens
-uv run python tuned_lens.py
+uv run python -m analysis.tuned_lens
 
 # Phase 5c: sparse autoencoder
-uv run python sae.py
+uv run python -m analysis.sae
 
 # Phase 6: generate text representation test cases for manual LLM evaluation
 uv run python print_test_cases.py
