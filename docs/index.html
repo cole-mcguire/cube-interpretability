@@ -47,6 +47,7 @@ nav a {
   white-space: nowrap;
 }
 nav a:hover { color: #e2e8f0; background: #334155; }
+nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
 
 /* ── Main layout ── */
 main {
@@ -212,6 +213,7 @@ hr { border: none; border-top: 1px solid #334155; }
 <header>
   <h1>2×2 Cube Interpretability</h1>
   <nav>
+    <a href="index.html" aria-current="page">Visualizer</a>
     <a href="probe_results.html">Phase 4 — Probing</a>
     <a href="patch_results.html">Phase 5a — Patching</a>
     <a href="patch_cf_results.html">Phase 5a — Counterfactual</a>
