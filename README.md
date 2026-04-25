@@ -101,7 +101,15 @@ cube-interpretability/
 │   ├── No_CoT.txt          GPT responses: all 5 representations × 3 distances
 │   └── CoT.txt             GPT responses: piece_identity + CoT × 3 distances
 │
-├── docs/                   Write-up and bibliography
+├── docs/                   GitHub Pages dashboard + write-up (https://cole-mcguire.github.io/cube-interpretability/)
+│   ├── index.html          Interactive visualizer: 2D net + 3D cube, IDA* solver, scramble/solution log
+│   ├── cube_core.js        Cube logic + IDA* heuristic tables compiled for the browser
+│   ├── solver.worker.js    Web Worker wrapper — runs IDA* off the main thread
+│   ├── probe_results.html  Phase 4 — Probing interactive Plotly charts
+│   ├── patch_results.html  Phase 5a — Activation patching results
+│   ├── patch_cf_results.html  Phase 5a — Counterfactual patching results
+│   ├── tuned_lens_results.html  Phase 5b — Tuned Lens results
+│   ├── sae_results.html    Phase 5c — SAE results
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography

@@ -202,6 +202,45 @@ input[type=number] {
 /* ── Divider ── */
 hr { border: none; border-top: 1px solid #334155; }
 
+/* ── Log section ── */
+#log-section {
+  border-top: 1px solid #334155;
+  padding: 14px 20px 20px;
+}
+
+#log-section .log-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+#log-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: monospace;
+  line-height: 1.65;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 14px;
+}
+
+.log-entry .log-rows { min-width: 0; }
+.log-entry .log-label { color: #64748b; }
+.log-entry .log-moves { color: #cbd5e1; word-break: break-all; }
+.log-entry .log-time  { color: #64748b; font-size: 11px; align-self: start; white-space: nowrap; padding-top: 1px; }
+
 /* ── Responsive ── */
 @media (max-width: 700px) {
   main { flex-direction: column; }
@@ -227,7 +266,7 @@ hr { border: none; border-top: 1px solid #334155; }
 <main>
   <div id="viz-panel">
     <canvas id="net-canvas"></canvas>
-    <canvas id="cube3d-canvas" width="240" height="240"></canvas>
+    <canvas id="cube3d-canvas" width="200" height="200"></canvas>
   </div>
 
   <div id="controls">
@@ -273,6 +312,14 @@ hr { border: none; border-top: 1px solid #334155; }
 
   </div>
 </main>
+
+<section id="log-section">
+  <div class="log-header">
+    <span class="section-label">Log</span>
+    <button class="btn" id="btn-clear-log" style="padding:2px 8px;font-size:11px">Clear</button>
+  </div>
+  <div id="log-entries"><span style="color:#475569;font-size:12px;font-family:monospace">No solves yet.</span></div>
+</section>
 
 <script src="cube_core.js"></script>
 <script>
@@ -498,7 +545,42 @@ document.addEventListener('keydown', e => {
 document.getElementById('btn-reset').addEventListener('click', reset);
 document.getElementById('btn-scramble').addEventListener('click', scramble);
 
-// ── Solver ────────────────────────────────────────────────────────────────────
+// ── Solve log ─────────────────────────────────────────────────────────────────
+const solveLog = [];
+let solveStartTime      = 0;
+let scrambleAtSolveTime = [];
+
+function pushLog(scramble, sol, ms) {
+  solveLog.unshift({ scramble, sol, ms });
+  if (solveLog.length > 50) solveLog.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('log-entries');
+  if (!solveLog.length) {
+    el.innerHTML = '<span style="color:#475569;font-size:12px;font-family:monospace">No solves yet.</span>';
+    return;
+  }
+  el.innerHTML = solveLog.map(({scramble, sol, ms}) => {
+    const sc  = scramble.length ? scramble.map(i => MOVE_NAMES[i]).join(' ') : '(none)';
+    const sl  = sol !== null ? (sol.length ? sol.map(i => MOVE_NAMES[i]).join(' ') : '(already solved)') : '(none found)';
+    return `<div class="log-entry">` +
+      `<div class="log-rows">` +
+        `<div><span class="log-label">Scramble (${scramble.length}):</span> <span class="log-moves">${sc}</span></div>` +
+        `<div><span class="log-label">Solution (${sol ? sol.length : '—'}):</span> <span class="log-moves">${sl}</span></div>` +
+      `</div>` +
+      `<div class="log-time">${ms} ms</div>` +
+    `</div>`;
+  }).join('');
+}
+
+document.getElementById('btn-clear-log').addEventListener('click', () => {
+  solveLog.length = 0;
+  renderLog();
+});
+
+// ── Solver ─────────────────────────────────────────────────────────────────────
 let worker       = null;
 let solution     = null;
 let solutionStep = 0;
@@ -549,23 +631,28 @@ solveBtn.addEventListener('click', () => {
   clearSolution();
   solveBtn.disabled = true;
   setSolveStatus('Solving…');
+  solveStartTime      = performance.now();
+  scrambleAtSolveTime = moveHistory.slice();
+
+  function onSolved(sol) {
+    const ms = Math.round(performance.now() - solveStartTime);
+    solveBtn.disabled = false;
+    if (sol === null) {
+      setSolveStatus('No solution found.', 'error');
+    } else {
+      solution     = sol;
+      solutionStep = 0;
+      updateSolutionDisplay();
+      stepBtn.disabled = (sol.length === 0);
+      playBtn.disabled = (sol.length === 0);
+    }
+    pushLog(scrambleAtSolveTime, sol, ms);
+  }
 
   if (!worker) {
     try {
       worker = new Worker('solver.worker.js');
-      worker.onmessage = e => {
-        solveBtn.disabled = false;
-        const sol = e.data;
-        if (sol === null) {
-          setSolveStatus('No solution found.', 'error');
-        } else {
-          solution     = sol;
-          solutionStep = 0;
-          updateSolutionDisplay();
-          stepBtn.disabled = (sol.length === 0);
-          playBtn.disabled = (sol.length === 0);
-        }
-      };
+      worker.onmessage = e => onSolved(e.data);
       worker.onerror = err => {
         solveBtn.disabled = false;
         setSolveStatus('Worker error: ' + err.message, 'error');
@@ -573,17 +660,7 @@ solveBtn.addEventListener('click', () => {
     } catch(ex) {
       // Fallback: run solver on main thread (blocks UI briefly)
       worker = null;
-      solveBtn.disabled = false;
-      const sol = idaStar(cubeState);
-      if (sol === null) {
-        setSolveStatus('No solution found.', 'error');
-      } else {
-        solution     = sol;
-        solutionStep = 0;
-        updateSolutionDisplay();
-        stepBtn.disabled = (sol.length === 0);
-        playBtn.disabled = (sol.length === 0);
-      }
+      onSolved(idaStar(cubeState));
       return;
     }
   }
