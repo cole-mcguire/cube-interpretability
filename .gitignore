@@ -10,8 +10,9 @@ data/
 # Model checkpoints — regenerate with `uv run cube-train`
 checkpoints/
 
-# Generated outputs
+# Generated outputs — exclude root-level HTML but not the docs dashboard
 *.html
+!docs/*.html
 
 # LaTeX build artifacts
 *.aux

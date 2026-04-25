@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2×2 Cube Interpretability Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0f172a;
+  color: #e2e8f0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+header h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  white-space: nowrap;
+}
+
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
+
+nav a {
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  transition: color .15s, background .15s;
+  white-space: nowrap;
+}
+nav a:hover { color: #e2e8f0; background: #334155; }
+
+/* ── Main layout ── */
+main {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+/* ── Canvas panel ── */
+#viz-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+#net-canvas {
+  display: block;
+  border-radius: 6px;
+}
+
+#cube3d-canvas {
+  display: block;
+  border-radius: 6px;
+  cursor: grab;
+}
+#cube3d-canvas:active { cursor: grabbing; }
+
+/* ── Controls panel ── */
+#controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 280px;
+  max-width: 340px;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 6px;
+}
+
+/* ── Move grid ── */
+#move-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}
+
+.move-btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: monospace;
+  padding: 5px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .1s, color .1s;
+}
+.move-btn:hover { background: #334155; color: #f1f5f9; }
+.move-btn:active { background: #475569; }
+
+/* ── Action row ── */
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background .1s, color .1s;
+  white-space: nowrap;
+}
+.btn:hover { background: #334155; color: #f1f5f9; }
+.btn:active { background: #475569; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.primary { background: #3b82f6; border-color: #2563eb; color: #fff; }
+.btn.primary:hover { background: #2563eb; }
+.btn.primary:disabled { background: #1e293b; border-color: #334155; color: #64748b; }
+
+.spinbox-wrap { display: flex; align-items: center; gap: 6px; }
+.spinbox-wrap label { color: #94a3b8; font-size: 0.8rem; }
+input[type=number] {
+  width: 52px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  font-size: 0.8rem;
+  padding: 5px 6px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+/* ── Solver panel ── */
+#solver-panel {
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #1e293b;
+}
+
+#solve-status {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.5;
+  word-break: break-word;
+  min-height: 20px;
+}
+#solve-status.error { color: #f87171; }
+#solve-status.done  { color: #4ade80; }
+
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.speed-row label { color: #94a3b8; font-size: 0.8rem; }
+
+/* ── Status / history ── */
+#status-box {
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #1e293b;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  line-height: 1.65;
+}
+#status-solved { color: #4ade80; font-weight: 600; }
+#status-history { margin-top: 6px; word-break: break-all; }
+
+/* ── Divider ── */
+hr { border: none; border-top: 1px solid #334155; }
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+  main { flex-direction: column; }
+  #controls { max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>2×2 Cube Interpretability</h1>
+  <nav>
+    <a href="probe_results.html">Phase 4 — Probing</a>
+    <a href="patch_results.html">Phase 5a — Patching</a>
+    <a href="patch_cf_results.html">Phase 5a — Counterfactual</a>
+    <a href="tuned_lens_results.html">Phase 5b — Tuned Lens</a>
+    <a href="sae_results.html">Phase 5c — SAE</a>
+    <a href="progress_report.pdf">Progress Report ↗</a>
+  </nav>
+</header>
+
+<main>
+  <div id="viz-panel">
+    <canvas id="net-canvas"></canvas>
+    <canvas id="cube3d-canvas" width="240" height="240"></canvas>
+  </div>
+
+  <div id="controls">
+
+    <div>
+      <div class="section-label">Moves</div>
+      <div id="move-grid"></div>
+    </div>
+
+    <hr>
+
+    <div class="action-row">
+      <button class="btn" id="btn-reset">Reset</button>
+      <div class="spinbox-wrap">
+        <label for="scramble-n">Scramble</label>
+        <input type="number" id="scramble-n" min="1" max="100" value="11">
+      </div>
+      <button class="btn" id="btn-scramble">Run</button>
+    </div>
+
+    <hr>
+
+    <div id="solver-panel">
+      <div class="section-label" style="margin-bottom:0">Solver</div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="btn primary" id="btn-solve">Solve</button>
+        <button class="btn" id="btn-step" disabled>Step</button>
+        <button class="btn" id="btn-play" disabled>▶ Play</button>
+      </div>
+      <div class="speed-row">
+        <label for="speed-ms">Speed</label>
+        <input type="number" id="speed-ms" min="50" max="2000" step="50" value="500">
+        <span style="color:#64748b;font-size:.75rem">ms</span>
+      </div>
+      <div id="solve-status"></div>
+    </div>
+
+    <div id="status-box">
+      <div id="status-solved"></div>
+      <div id="status-info"></div>
+      <div id="status-history"></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="cube_core.js"></script>
+<script>
+// ── Net renderer ──────────────────────────────────────────────────────────────
+const NET_FACE = [
+  {name:'U', col:2, row:0, start:0},
+  {name:'L', col:0, row:2, start:16},
+  {name:'F', col:2, row:2, start:8},
+  {name:'R', col:4, row:2, start:20},
+  {name:'B', col:6, row:2, start:12},
+  {name:'D', col:2, row:4, start:4},
+];
+const SS=28, GAP=3, FGAP=8, MX=14, MY=16;
+const faceSpan = 2*SS+GAP;
+const cellSpan = faceSpan+FGAP;
+const NET_W = 2*MX + 6*cellSpan + faceSpan;
+const NET_H = 2*MY + 4*cellSpan + faceSpan;
+
+const netCanvas = document.getElementById('net-canvas');
+netCanvas.width  = NET_W;
+netCanvas.height = NET_H;
+const netCtx = netCanvas.getContext('2d');
+
+function drawNet(state) {
+  netCtx.fillStyle = '#111827';
+  netCtx.fillRect(0, 0, NET_W, NET_H);
+  for (const {name, col, row, start} of NET_FACE) {
+    const fx = MX + col*cellSpan;
+    const fy = MY + row*cellSpan;
+    netCtx.fillStyle = '#6b7280';
+    netCtx.font = 'bold 11px monospace';
+    netCtx.textAlign = 'center';
+    netCtx.textBaseline = 'middle';
+    netCtx.fillText(name, fx + SS, fy - 8);
+    for (let r = 0; r < 2; r++) {
+      for (let c = 0; c < 2; c++) {
+        const si = start + r*2 + c;
+        const x = fx + c*(SS+GAP);
+        const y = fy + r*(SS+GAP);
+        netCtx.fillStyle = COLOR_HEX[state[si]];
+        netCtx.fillRect(x, y, SS, SS);
+        netCtx.fillStyle = '#0f172a';
+        netCtx.font = 'bold 11px sans-serif';
+        netCtx.fillText(IDX_TO_COLOR[state[si]], x+SS/2, y+SS/2);
+      }
+    }
+  }
+}
+
+// ── 3D renderer ───────────────────────────────────────────────────────────────
+const c3 = document.getElementById('cube3d-canvas');
+const ctx3 = c3.getContext('2d');
+let yaw   = 35 * Math.PI / 180;
+let pitch = 22 * Math.PI / 180;
+let dragStart = null;
+
+function rotate3(x, y, z) {
+  const x2 = x*Math.cos(yaw) + z*Math.sin(yaw);
+  const z2 = -x*Math.sin(yaw) + z*Math.cos(yaw);
+  const y3 = y*Math.cos(pitch) - z2*Math.sin(pitch);
+  const z3 = y*Math.sin(pitch) + z2*Math.cos(pitch);
+  return [x2, y3, z3];
+}
+
+function draw3D(state) {
+  const S = c3.width, SCALE = S*0.33;
+  ctx3.fillStyle = '#111827';
+  ctx3.fillRect(0,0,S,S);
+  const visible = [];
+  for (let si = 0; si < 24; si++) {
+    const q = STICKER_QUADS[si];
+    const [,, nz] = rotate3(q[0],q[1],q[2]);
+    if (nz <= 0) continue;
+    const pts=[]; let depth=0;
+    for (let ci=0;ci<4;ci++) {
+      const [rx,ry,rz] = rotate3(q[3+ci*3],q[4+ci*3],q[5+ci*3]);
+      pts.push([S/2+rx*SCALE, S/2-ry*SCALE]);
+      depth += rz;
+    }
+    visible.push([depth/4, pts, COLOR_HEX[state[si]]]);
+  }
+  visible.sort((a,b) => a[0]-b[0]);
+  for (const [,pts,color] of visible) {
+    ctx3.beginPath();
+    ctx3.moveTo(pts[0][0],pts[0][1]);
+    for (let i=1;i<4;i++) ctx3.lineTo(pts[i][0],pts[i][1]);
+    ctx3.closePath();
+    ctx3.fillStyle = color;
+    ctx3.fill();
+    ctx3.strokeStyle = '#111827';
+    ctx3.lineWidth = 2.5;
+    ctx3.stroke();
+  }
+}
+
+c3.addEventListener('mousedown', e => {
+  const r = c3.getBoundingClientRect();
+  dragStart = {x:e.clientX-r.left, y:e.clientY-r.top, yaw, pitch};
+});
+c3.addEventListener('mousemove', e => {
+  if (!dragStart) return;
+  const r = c3.getBoundingClientRect();
+  yaw   = dragStart.yaw   + (e.clientX - r.left - dragStart.x) * 0.012;
+  pitch = Math.max(-Math.PI/2+.05, Math.min(Math.PI/2-.05,
+    dragStart.pitch + (e.clientY - r.top - dragStart.y) * 0.012));
+  draw3D(cubeState);
+});
+c3.addEventListener('mouseup', () => dragStart = null);
+c3.addEventListener('mouseleave', () => dragStart = null);
+c3.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t=e.touches[0], r=c3.getBoundingClientRect();
+  dragStart={x:t.clientX-r.left,y:t.clientY-r.top,yaw,pitch};
+}, {passive:false});
+c3.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (!dragStart) return;
+  const t=e.touches[0], r=c3.getBoundingClientRect();
+  yaw   = dragStart.yaw   + (t.clientX-r.left-dragStart.x)*0.012;
+  pitch = Math.max(-Math.PI/2+.05, Math.min(Math.PI/2-.05,
+    dragStart.pitch + (t.clientY-r.top-dragStart.y)*0.012));
+  draw3D(cubeState);
+}, {passive:false});
+c3.addEventListener('touchend', () => dragStart = null);
+
+// ── Cube state ────────────────────────────────────────────────────────────────
+let cubeState   = SOLVED_STATE.slice();
+let moveHistory = [];
+
+function redraw() {
+  drawNet(cubeState);
+  draw3D(cubeState);
+  updateStatus();
+}
+
+function doMove(idx) {
+  cubeState = applyMove(cubeState, idx);
+  moveHistory.push(idx);
+  clearSolution();
+  redraw();
+}
+
+function reset() {
+  cubeState   = SOLVED_STATE.slice();
+  moveHistory = [];
+  clearSolution();
+  redraw();
+}
+
+function scramble() {
+  cubeState   = SOLVED_STATE.slice();
+  moveHistory = [];
+  clearSolution();
+  const n = parseInt(document.getElementById('scramble-n').value) || 11;
+  let lastFace = -1;
+  for (let i=0;i<n;i++) {
+    let m;
+    do { m = Math.floor(Math.random()*18); } while (((m/3)|0) === lastFace);
+    cubeState = applyMove(cubeState, m);
+    moveHistory.push(m);
+    lastFace = (m/3)|0;
+  }
+  redraw();
+}
+
+function updateStatus() {
+  const solved = isSolved(cubeState);
+  document.getElementById('status-solved').textContent =
+    solved ? '✓ Solved' : '';
+  const facesSolved = countFacesSolved(cubeState);
+  const cornersOriented = countCornersOriented(cubeState);
+  document.getElementById('status-info').textContent =
+    `Faces solved: ${facesSolved}/6  ·  Corners oriented: ${cornersOriented}/8`;
+  const last18 = moveHistory.slice(-18).map(i => MOVE_NAMES[i]).join(' ');
+  document.getElementById('status-history').textContent =
+    moveHistory.length
+      ? `History${moveHistory.length>18?' (last 18)':''}: ${last18}`
+      : 'History: none';
+}
+
+function countFacesSolved(state) {
+  let n = 0;
+  for (let f=0;f<6;f++) {
+    const base = f*4, c = state[base];
+    if (state[base+1]===c && state[base+2]===c && state[base+3]===c) n++;
+  }
+  return n;
+}
+
+function countCornersOriented(state) {
+  // Match cube.py: a corner is "oriented" if its U/D-face sticker holds W(0) or Y(1)
+  let n = 0;
+  for (let pos = 0; pos < 8; pos++) {
+    const c = state[CORNER_STICKERS[pos][0]];
+    if (c === 0 || c === 1) n++;
+  }
+  return n;
+}
+
+// ── Build move buttons ────────────────────────────────────────────────────────
+const grid = document.getElementById('move-grid');
+MOVE_NAMES.forEach((name, idx) => {
+  const btn = document.createElement('button');
+  btn.className = 'move-btn';
+  btn.textContent = name;
+  btn.addEventListener('click', () => doMove(idx));
+  grid.appendChild(btn);
+});
+
+// ── Keyboard shortcuts ────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  const lower = e.key.toLowerCase();
+  const map = {u:0,d:3,f:6,b:9,l:12,r:15};
+  if (lower in map) {
+    const base = map[lower];
+    if (e.shiftKey) doMove(base+1);  // uppercase = prime
+    else            doMove(base);
+  }
+});
+
+// ── Button wiring ─────────────────────────────────────────────────────────────
+document.getElementById('btn-reset').addEventListener('click', reset);
+document.getElementById('btn-scramble').addEventListener('click', scramble);
+
+// ── Solver ────────────────────────────────────────────────────────────────────
+let worker       = null;
+let solution     = null;
+let solutionStep = 0;
+let playing      = false;
+let playTimer    = null;
+
+const solveBtn = document.getElementById('btn-solve');
+const stepBtn  = document.getElementById('btn-step');
+const playBtn  = document.getElementById('btn-play');
+const statusEl = document.getElementById('solve-status');
+
+function clearSolution() {
+  solution     = null;
+  solutionStep = 0;
+  stopPlay();
+  stepBtn.disabled = true;
+  playBtn.disabled = true;
+  statusEl.textContent = '';
+  statusEl.className = '';
+}
+
+function setSolveStatus(msg, cls='') {
+  statusEl.textContent = msg;
+  statusEl.className = cls;
+}
+
+function updateSolutionDisplay() {
+  if (!solution || solution.length === 0) {
+    setSolveStatus('Already solved!', 'done');
+    return;
+  }
+  const names = solution.map(m => MOVE_NAMES[m]);
+  const done  = names.slice(0, solutionStep);
+  const left  = names.slice(solutionStep);
+  const total = solution.length;
+  const rem   = total - solutionStep;
+  let text    = `${rem}/${total} left: `;
+  if (done.length) text += `[${done.join(' ')}] `;
+  text += left.join(' ');
+  setSolveStatus(text, rem === 0 ? 'done' : '');
+}
+
+solveBtn.addEventListener('click', () => {
+  if (isSolved(cubeState)) {
+    setSolveStatus('Already solved!', 'done');
+    return;
+  }
+  clearSolution();
+  solveBtn.disabled = true;
+  setSolveStatus('Solving…');
+
+  if (!worker) {
+    try {
+      worker = new Worker('solver.worker.js');
+      worker.onmessage = e => {
+        solveBtn.disabled = false;
+        const sol = e.data;
+        if (sol === null) {
+          setSolveStatus('No solution found.', 'error');
+        } else {
+          solution     = sol;
+          solutionStep = 0;
+          updateSolutionDisplay();
+          stepBtn.disabled = (sol.length === 0);
+          playBtn.disabled = (sol.length === 0);
+        }
+      };
+      worker.onerror = err => {
+        solveBtn.disabled = false;
+        setSolveStatus('Worker error: ' + err.message, 'error');
+      };
+    } catch(ex) {
+      // Fallback: run solver on main thread (blocks UI briefly)
+      worker = null;
+      solveBtn.disabled = false;
+      const sol = idaStar(cubeState);
+      if (sol === null) {
+        setSolveStatus('No solution found.', 'error');
+      } else {
+        solution     = sol;
+        solutionStep = 0;
+        updateSolutionDisplay();
+        stepBtn.disabled = (sol.length === 0);
+        playBtn.disabled = (sol.length === 0);
+      }
+      return;
+    }
+  }
+  worker.postMessage(cubeState.buffer.slice(0));
+});
+
+function doStep() {
+  if (!solution || solutionStep >= solution.length) return;
+  const m = solution[solutionStep++];
+  cubeState = applyMove(cubeState, m);
+  moveHistory.push(m);
+  redraw();
+  updateSolutionDisplay();
+  if (solutionStep >= solution.length) {
+    stepBtn.disabled = true;
+    playBtn.disabled = true;
+    stopPlay();
+  }
+}
+
+stepBtn.addEventListener('click', doStep);
+
+playBtn.addEventListener('click', () => {
+  if (playing) { stopPlay(); return; }
+  if (!solution || solutionStep >= solution.length) return;
+  playing = true;
+  playBtn.textContent = '■ Stop';
+  scheduleNext();
+});
+
+function scheduleNext() {
+  if (!playing || !solution || solutionStep >= solution.length) {
+    stopPlay(); return;
+  }
+  const delay = Math.max(50, parseInt(document.getElementById('speed-ms').value)||500);
+  playTimer = setTimeout(() => { doStep(); scheduleNext(); }, delay);
+}
+
+function stopPlay() {
+  playing = false;
+  playBtn.textContent = '▶ Play';
+  if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+}
+
+// ── Initial draw ──────────────────────────────────────────────────────────────
+redraw();
+</script>
+</body>
+</html>
