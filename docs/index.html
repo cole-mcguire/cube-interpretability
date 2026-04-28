@@ -52,10 +52,11 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
 
 /* ── Main layout ── */
 main {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(260px, 320px);
   gap: 20px;
   padding: 20px;
-  align-items: flex-start;
+  align-items: start;
 }
 
 #left-col {
@@ -63,7 +64,6 @@ main {
   gap: 20px;
   align-items: flex-start;
   flex-wrap: wrap;
-  flex-shrink: 0;
 }
 
 /* ── Canvas panel ── */
@@ -262,9 +262,8 @@ hr { border: none; border-top: 1px solid #334155; }
 .log-entry .log-time  { color: #64748b; font-size: 11px; align-self: start; white-space: nowrap; padding-top: 1px; }
 
 /* ── Responsive ── */
-@media (max-width: 700px) {
-  main { flex-direction: column; }
-  #left-col { flex-direction: column; }
+@media (max-width: 900px) {
+  main { grid-template-columns: 1fr; }
   #controls, #log-section { max-width: 100%; }
 }
 </style>
