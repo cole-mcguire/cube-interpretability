@@ -32,11 +32,11 @@ build-backend = "hatchling.build"
 "dataset.py" = "dataset.py"
 "model.py" = "model.py"
 "train.py" = "train.py"
-"analysis/__init__.py" = "analysis/__init__.py"
-"analysis/probe.py" = "analysis/probe.py"
-"analysis/patch.py" = "analysis/patch.py"
-"analysis/tuned_lens.py" = "analysis/tuned_lens.py"
-"analysis/sae.py" = "analysis/sae.py"
+"interp/__init__.py" = "interp/__init__.py"
+"interp/probe.py" = "interp/probe.py"
+"interp/patch.py" = "interp/patch.py"
+"interp/tuned_lens.py" = "interp/tuned_lens.py"
+"interp/sae.py" = "interp/sae.py"
 [dependency-groups]
 dev = [
     "jupyter>=1.1.1",
