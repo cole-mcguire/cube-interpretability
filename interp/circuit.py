@@ -343,12 +343,17 @@ def _build_dla_fig(dla_correct: dict[str, np.ndarray], n_layers: int):
         "#3b82f6" if c == "embed" else "#f59e0b" if c.startswith("attn") else "#10b981"
         for c in comps
     ]
-    fig = go.Figure(go.Bar(
-        x=comps, y=means,
-        error_y=dict(type="data", array=stds, visible=True, color="#94a3b8"),
-        marker_color=colors,
+    error_colors = [
+        "#93c5fd" if c == "embed" else "#fcd34d" if c.startswith("attn") else "#6ee7b7"
+        for c in comps
+    ]
+    fig = go.Figure([go.Bar(
+        x=[c], y=[m],
+        error_y=dict(type="data", array=[s], visible=True, color=ec),
+        marker_color=col,
         hovertemplate="%{x}<br>mean DLA: %{y:.3f}<extra></extra>",
-    ))
+        showlegend=False,
+    ) for c, m, s, col, ec in zip(comps, means, stds, colors, error_colors)])
     fig.update_layout(
         title="Direct Logit Attribution by Component",
         xaxis_title="Component",
