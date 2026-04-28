@@ -15,6 +15,8 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 7. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
 8. **Sparse autoencoder** — trains an overcomplete SAE on each layer's residual stream to find monosemantic features and check alignment with known concepts
 9. **Text representations** — evaluates five ways to describe cube state in natural language and tests whether a pre-trained LLM can solve scrambles from each
+10. **Circuit identification** — DLA, activation patching, and neuron DLA identify which components carry the distance signal and which individual neurons are most distance-tuned
+11. **Weight-level analysis** — SVD of the embedding matrix, direct read-out path accuracy, and per-neuron input/output profiles close the loop on the circuit
 
 ## File map
 
@@ -45,8 +47,12 @@ cube-interpretability/
 │   ├── patch.py            Phase 5a — activation patching
 │   │                       Concept-direction ablation + counterfactual swap
 │   ├── tuned_lens.py       Phase 5b — logit lens & trained per-layer affine lens
-│   └── sae.py              Phase 5c — sparse autoencoder (4× expansion, 512 features)
-│                           Dead-feature resampling, Pearson alignment analysis
+│   ├── sae.py              Phase 5c — sparse autoencoder (4× expansion, 512 features)
+│   │                       Dead-feature resampling, Pearson alignment analysis
+│   ├── circuit.py          Phase 7 — circuit identification
+│   │                       DLA, activation patching, neuron DLA
+│   └── weights.py          Phase 8 — weight-level analysis
+│                           Embedding SVD, direct read-out path, top neuron profiles
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -64,6 +70,8 @@ cube-interpretability/
 │   ├── patch_cf_results.html  Phase 5a — Counterfactual patching results
 │   ├── tuned_lens_results.html  Phase 5b — Tuned Lens results
 │   ├── sae_results.html    Phase 5c — SAE results
+│   ├── circuit_results.html  Phase 7 — Circuit identification results
+│   ├── weights_results.html  Phase 8 — Weight-level analysis results
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -144,6 +152,12 @@ uv run python -m interp.sae
 
 # Phase 6: generate text representation test cases for manual LLM evaluation
 uv run python print_test_cases.py
+
+# Phase 7: circuit identification (DLA, activation patching, neuron DLA)
+uv run python -m interp.circuit
+
+# Phase 8: weight-level analysis (embedding SVD, direct read-out, neuron profiles)
+uv run python -m interp.weights
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
@@ -243,6 +257,16 @@ A subsequent automated evaluation (API, 10 cases per distance, d=3–11, code ex
 \* Only 2 d=11 cases captured in that run.
 
 Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–86%); GPT-4o and Llama trail at 12–16%, reflecting differences in notation parsing rather than cube understanding. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth.
+
+**Phase 7 — Circuit identification:**
+- `mlp_0` has by far the highest DLA (+5.6), making it the dominant component in the circuit; all attention layers contribute negatively (−0.2 to −1.4)
+- Activation patching confirms this: patching `mlp_0` produces the largest prediction shift; attention patching has almost no effect
+- Top individual neurons are L3N460 and L3N7 (DLA +2.36/+2.30) followed by L0N399 and L0N224 — a small handful of neurons account for a disproportionate share of the distance signal
+
+**Phase 8 — Weight-level analysis:**
+- The direct read-out path W_U @ W_E achieves only 8.4% accuracy (random baseline 8.3%) — the embedding alone, without any MLP computation, cannot linearly predict distance; the transformer blocks are necessary
+- The top-8 embedding singular values are nearly equal (3.32–2.87), suggesting the embedding is roughly isotropic and does not preferentially align with any single input direction
+- Top neuron input profiles (fc1.weight[n] @ W_E, reshaped to 24×6) show structured sticker-color selectivity; output profiles (W_U @ fc2.weight[:,n]) reveal which neurons promote specific distance classes vs. suppress them
 
 ## References
 
