@@ -27,7 +27,7 @@ checkpoints/
 .claude/
 
 # Automated API test runner (requires key + distances cache)
-test_representations.py
+# test_representations.py
 
 # macOS
 .DS_Store
