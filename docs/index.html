@@ -55,8 +55,15 @@ main {
   display: flex;
   gap: 20px;
   padding: 20px;
-  flex-wrap: wrap;
   align-items: flex-start;
+}
+
+#left-col {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* ── Canvas panel ── */
@@ -257,6 +264,7 @@ hr { border: none; border-top: 1px solid #334155; }
 /* ── Responsive ── */
 @media (max-width: 700px) {
   main { flex-direction: column; }
+  #left-col { flex-direction: column; }
   #controls, #log-section { max-width: 100%; }
 }
 </style>
@@ -277,6 +285,7 @@ hr { border: none; border-top: 1px solid #334155; }
 </header>
 
 <main>
+  <div id="left-col">
   <div id="viz-panel">
     <canvas id="net-canvas"></canvas>
     <canvas id="cube3d-canvas" width="200" height="200"></canvas>
@@ -324,6 +333,7 @@ hr { border: none; border-top: 1px solid #334155; }
     </div>
 
   </div>
+  </div><!-- #left-col -->
 
   <section id="log-section">
     <div id="log-inner">
