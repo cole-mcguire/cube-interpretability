@@ -204,22 +204,35 @@ hr { border: none; border-top: 1px solid #334155; }
 
 /* ── Log section ── */
 #log-section {
-  border-top: 1px solid #334155;
-  padding: 14px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 280px;
+  max-width: 340px;
 }
 
 #log-section .log-header {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  margin-bottom: 8px;
+}
+
+#log-inner {
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
 }
 
 #log-entries {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  max-height: 260px;
+  max-height: 500px;
   overflow-y: auto;
 }
 
@@ -244,7 +257,7 @@ hr { border: none; border-top: 1px solid #334155; }
 /* ── Responsive ── */
 @media (max-width: 700px) {
   main { flex-direction: column; }
-  #controls { max-width: 100%; }
+  #controls, #log-section { max-width: 100%; }
 }
 </style>
 </head>
@@ -311,15 +324,17 @@ hr { border: none; border-top: 1px solid #334155; }
     </div>
 
   </div>
-</main>
 
-<section id="log-section">
-  <div class="log-header">
-    <span class="section-label">Log</span>
-    <button class="btn" id="btn-clear-log" style="padding:2px 8px;font-size:11px">Clear</button>
-  </div>
-  <div id="log-entries"><span style="color:#475569;font-size:12px;font-family:monospace">No solves yet.</span></div>
-</section>
+  <section id="log-section">
+    <div id="log-inner">
+      <div class="log-header">
+        <span class="section-label">Log</span>
+        <button class="btn" id="btn-clear-log" style="padding:2px 8px;font-size:11px">Clear</button>
+      </div>
+      <div id="log-entries"><span style="color:#475569;font-size:12px;font-family:monospace">No solves yet.</span></div>
+    </div>
+  </section>
+</main>
 
 <script src="cube_core.js"></script>
 <script>
