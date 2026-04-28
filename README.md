@@ -190,18 +190,6 @@ The BFS reaches the full 88M-state space from a single solved seed (face moves c
 U U' U2 | D D' D2 | F F' F2 | B B' B2 | L L' L2 | R R' R2
 ```
 
-## References
-
-- Alain & Bengio (2016) — [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
-- Belrose et al. (2023) — [Eliciting Latent Predictions from Transformers with the Tuned Lens](https://arxiv.org/abs/2303.08112)
-- Meng et al. (2022) — [Locating and Editing Factual Associations in GPT](https://arxiv.org/abs/2202.05262) (activation patching methodology)
-- Nanda et al. (2023) — [Progress measures for grokking via mechanistic interpretability](https://arxiv.org/abs/2301.05217)
-- Bricken et al. (2023) — [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features)
-- Variengien et al. (2024) — [Transformers Represent Belief State Geometry in their Residual Stream](https://arxiv.org/abs/2405.15943)
-- Gupta et al. (2024) — [Better World Models Can Lead to Better Post-Training Performance](https://arxiv.org/abs/2512.03400)
-- Agostinelli et al. (2019) — [Solving the Rubik's Cube with Deep Reinforcement Learning and Search](https://www.nature.com/articles/s42256-019-0070-z)
-- Takano (2023) — [Self-Supervision is All You Need for Solving Rubik's Cube](https://arxiv.org/abs/2106.03157)
-
 ## Key findings
 
 **Phase 4 — Linear probing:**
@@ -255,3 +243,15 @@ A subsequent automated evaluation (API, 10 cases per distance, d=3–11, code ex
 \* Only 2 d=11 cases captured in that run.
 
 Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–86%); GPT-4o and Llama trail at 12–16%, reflecting differences in notation parsing rather than cube understanding. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth.
+
+## References
+
+- Alain & Bengio (2016) — [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
+- Belrose et al. (2023) — [Eliciting Latent Predictions from Transformers with the Tuned Lens](https://arxiv.org/abs/2303.08112)
+- Meng et al. (2022) — [Locating and Editing Factual Associations in GPT](https://arxiv.org/abs/2202.05262) (activation patching methodology)
+- Nanda et al. (2023) — [Progress measures for grokking via mechanistic interpretability](https://arxiv.org/abs/2301.05217)
+- Bricken et al. (2023) — [Towards Monosemanticity: Decomposing Language Models With Dictionary Learning](https://transformer-circuits.pub/2023/monosemantic-features)
+- Variengien et al. (2024) — [Transformers Represent Belief State Geometry in their Residual Stream](https://arxiv.org/abs/2405.15943)
+- Gupta et al. (2024) — [Better World Models Can Lead to Better Post-Training Performance](https://arxiv.org/abs/2512.03400)
+- Agostinelli et al. (2019) — [Solving the Rubik's Cube with Deep Reinforcement Learning and Search](https://www.nature.com/articles/s42256-019-0070-z)
+- Takano (2023) — [Self-Supervision is All You Need for Solving Rubik's Cube](https://arxiv.org/abs/2106.03157)
