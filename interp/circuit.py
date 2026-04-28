@@ -465,17 +465,20 @@ def _build_neurons_fig(neuron_dla: list[np.ndarray], n_layers: int, top_k: int =
     return fig
 
 
-NAV = """\
+NAV_CSS = """\
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
-body {{ background: #0f172a; color: #e2e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; }}
-header {{ background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }}
-header h1 {{ font-size: 14px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }}
-nav {{ display: flex; gap: 6px; flex-wrap: wrap; }}
-nav a {{ color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }}
-nav a:hover {{ color: #e2e8f0; background: #334155; }}
-nav a[aria-current="page"] {{ color: #f1f5f9; background: #334155; border-color: #475569; }}
-</style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f172a; color: #e2e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+header { background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+header h1 { font-size: 14px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; }
+nav a { color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }
+nav a:hover { color: #e2e8f0; background: #334155; }
+nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
+</style>"""
+
+NAV_BODY = """\
 <header>
   <h1>2×2 Cube Interpretability</h1>
   <nav>
@@ -488,8 +491,7 @@ nav a[aria-current="page"] {{ color: #f1f5f9; background: #334155; border-color:
     <a href="circuit_results.html" aria-current="page">Phase 7 — Circuit</a>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
-</header>
-"""
+</header>"""
 
 
 def write_circuit_page(
@@ -511,10 +513,10 @@ def write_circuit_page(
     html = (
         "<!DOCTYPE html>\n<html>\n<head>\n"
         '<meta charset="utf-8">\n'
-        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
-        "<title>Phase 7 — Circuit Identification</title>\n"
+        + NAV_CSS + "\n"
+        + "<title>Phase 7 — Circuit Identification</title>\n"
         "</head>\n<body>\n"
-        + NAV
+        + NAV_BODY + "\n"
         + div_dla + "\n"
         + div_patch + "\n"
         + div_neurons + "\n"
