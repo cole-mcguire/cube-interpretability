@@ -345,7 +345,7 @@ def _build_dla_fig(dla_correct: dict[str, np.ndarray], n_layers: int):
     ]
     fig = go.Figure(go.Bar(
         x=comps, y=means,
-        error_y=dict(type="data", array=stds, visible=True),
+        error_y=dict(type="data", array=stds, visible=True, color="#94a3b8"),
         marker_color=colors,
         hovertemplate="%{x}<br>mean DLA: %{y:.3f}<extra></extra>",
     ))
