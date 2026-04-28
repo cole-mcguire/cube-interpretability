@@ -1,0 +1,328 @@
+Loading BFS distance table...
+  88,179,840 states loaded
+
+Model: gpt-5.2
+
+Few-shot example:
+  Scramble : R2 B L' R'
+  Solution : L R B' R2
+
+Generating test cases (2 per distance level)...
+  50 cases ready
+
+─── Case 1/50  optimal_distance=3  U: [WR|BY]  D: [GW|YO]  F: [YG|YR]  B: [WO|WB]  L: [GR|OR]  R: [OB|GB]
+  [face_grid       ] ✗ WRONG   len=10  optimal=3
+  [compact_string  ] ✗ WRONG   len=11  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=10  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 2/50  optimal_distance=3  U: [WG|OG]  D: [BY|BR]  F: [GR|WB]  B: [OB|GY]  L: [OY|RR]  R: [WW|OY]
+  [face_grid       ] ✗ WRONG   len=8  optimal=3
+  [compact_string  ] ✗ WRONG   len=10  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 3/50  optimal_distance=3  U: [GW|GY]  D: [BW|BY]  F: [WB|YB]  B: [GY|GW]  L: [RR|OO]  R: [RO|RO]
+  [face_grid       ] ✗ WRONG   len=7  optimal=3
+  [compact_string  ] ✗ WRONG   len=5  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=7  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 4/50  optimal_distance=3  U: [WG|WG]  D: [YB|YB]  F: [BW|BW]  B: [YG|YG]  L: [RR|RR]  R: [OO|OO]
+  [face_grid       ] ✗ WRONG   len=6  optimal=3
+  [compact_string  ] ✗ WRONG   len=6  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=7  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 5/50  optimal_distance=3  U: [WO|BY]  D: [GW|YR]  F: [RB|RO]  B: [GO|GB]  L: [GW|OW]  R: [RY|BY]
+  [face_grid       ] ✗ WRONG   len=8  optimal=3
+  [compact_string  ] ✗ WRONG   len=13  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 6/50  optimal_distance=3  U: [OO|YY]  D: [WW|OO]  F: [GB|GB]  B: [GG|BB]  L: [WR|WR]  R: [RY|RY]
+  [face_grid       ] ✗ WRONG   len=5  optimal=3
+  [compact_string  ] ✗ WRONG   len=8  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=5  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 7/50  optimal_distance=3  U: [BG|BG]  D: [BG|BG]  F: [WY|WY]  B: [WY|WY]  L: [OO|RR]  R: [RR|OO]
+  [face_grid       ] ✗ WRONG   len=6  optimal=3
+  [compact_string  ] ✗ WRONG   len=6  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=5  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 8/50  optimal_distance=3  U: [WW|GG]  D: [BB|YY]  F: [RR|RR]  B: [OO|OO]  L: [GY|GY]  R: [WB|WB]
+  [face_grid       ] ✗ WRONG   len=5  optimal=3
+  [compact_string  ] ✗ WRONG   len=7  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=5  optimal=3
+  [move_sequence   ] ✗ WRONG   len=8  optimal=3
+
+─── Case 9/50  optimal_distance=3  U: [GW|OR]  D: [RO|YB]  F: [BY|WG]  B: [GY|WB]  L: [RW|OG]  R: [BO|YR]
+  [face_grid       ] ✗ WRONG   len=8  optimal=3
+  [compact_string  ] ✗ WRONG   len=12  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 10/50  optimal_distance=3  U: [BR|OG]  D: [RB|GO]  F: [WY|WY]  B: [WY|WY]  L: [OG|OG]  R: [RB|RB]
+  [face_grid       ] ✗ WRONG   len=5  optimal=3
+  [compact_string  ] ✗ WRONG   len=6  optimal=3
+  [corner_cubies   ] ✗ WRONG   len=3  optimal=3
+  [move_sequence   ] ✓ SOLVED  len=7  optimal=3
+
+─── Case 11/50  optimal_distance=5  U: [BB|WB]  D: [WG|GO]  F: [RY|BY]  B: [YW|GR]  L: [RG|YO]  R: [OR|OW]
+  [face_grid       ] ✗ WRONG   len=10  optimal=5
+  [compact_string  ] ✗ WRONG   len=7  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=5
+  [move_sequence   ] ✗ WRONG   len=10  optimal=5
+
+─── Case 12/50  optimal_distance=5  U: [WB|RW]  D: [YY|BY]  F: [GO|GG]  B: [OB|BR]  L: [OW|WO]  R: [GY|RR]
+  [face_grid       ] ✗ WRONG   len=8  optimal=5
+  [compact_string  ] ✗ WRONG   len=7  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 13/50  optimal_distance=5  U: [WG|OY]  D: [WW|YB]  F: [WO|BB]  B: [YG|RG]  L: [RG|RO]  R: [BO|RY]
+  [face_grid       ] ✗ WRONG   len=11  optimal=5
+  [compact_string  ] ✗ WRONG   len=11  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 14/50  optimal_distance=5  U: [GY|RY]  D: [RW|OO]  F: [GG|YB]  B: [BY|WW]  L: [RW|GB]  R: [OO|RB]
+  [face_grid       ] ✗ WRONG   len=8  optimal=5
+  [compact_string  ] ✗ WRONG   len=9  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 15/50  optimal_distance=5  U: [RW|YG]  D: [RR|OY]  F: [BY|WW]  B: [GY|GB]  L: [BO|WG]  R: [RO|BO]
+  [face_grid       ] ✗ WRONG   len=14  optimal=5
+  [compact_string  ] ✗ WRONG   len=10  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=7  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 16/50  optimal_distance=5  U: [YG|BB]  D: [BW|RG]  F: [WW|YG]  B: [WR|OB]  L: [GO|YO]  R: [RR|OY]
+  [face_grid       ] ✗ WRONG   len=13  optimal=5
+  [compact_string  ] ✗ WRONG   len=7  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 17/50  optimal_distance=5  U: [WB|WR]  D: [YO|YG]  F: [BW|BY]  B: [WO|YO]  L: [GR|GR]  R: [GO|BR]
+  [face_grid       ] ✗ WRONG   len=11  optimal=5
+  [compact_string  ] ✗ WRONG   len=11  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=5  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 18/50  optimal_distance=5  U: [OG|BO]  D: [RY|GG]  F: [RW|YO]  B: [OB|RR]  L: [YW|YB]  R: [BW|GW]
+  [face_grid       ] ✗ WRONG   len=10  optimal=5
+  [compact_string  ] ✗ WRONG   len=6  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=15  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 19/50  optimal_distance=5  U: [BO|BW]  D: [OW|RR]  F: [OO|WR]  B: [GR|GW]  L: [YY|BB]  R: [GY|GY]
+  [face_grid       ] ✗ WRONG   len=7  optimal=5
+  [compact_string  ] ✗ WRONG   len=7  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=13  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 20/50  optimal_distance=5  U: [YO|YY]  D: [BW|WO]  F: [RR|WG]  B: [BO|YR]  L: [BB|GR]  R: [GW|OG]
+  [face_grid       ] ✗ WRONG   len=10  optimal=5
+  [compact_string  ] ✗ WRONG   len=13  optimal=5
+  [corner_cubies   ] ✗ WRONG   len=6  optimal=5
+  [move_sequence   ] ✓ SOLVED  len=9  optimal=5
+
+─── Case 21/50  optimal_distance=7  U: [YW|GG]  D: [WW|OO]  F: [RO|OB]  B: [RB|BB]  L: [RY|WG]  R: [YG|RY]
+  [face_grid       ] ✗ WRONG   len=11  optimal=7
+  [compact_string  ] ✗ WRONG   len=5  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=9  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 22/50  optimal_distance=7  U: [WW|YO]  D: [OR|GO]  F: [RB|YY]  B: [BB|GW]  L: [OB|RG]  R: [YR|GW]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=7  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 23/50  optimal_distance=7  U: [OB|GG]  D: [YB|WR]  F: [RR|GR]  B: [WB|YG]  L: [YY|OO]  R: [WO|WB]
+  [face_grid       ] ✗ WRONG   len=10  optimal=7
+  [compact_string  ] ✗ WRONG   len=11  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=7  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 24/50  optimal_distance=7  U: [YW|GR]  D: [GW|BR]  F: [YB|RO]  B: [GB|GO]  L: [RO|YW]  R: [WO|BY]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=7  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 25/50  optimal_distance=7  U: [BY|OG]  D: [YB|RG]  F: [WR|GW]  B: [BW|YB]  L: [RG|YO]  R: [WO|OR]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=14  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=7
+  [move_sequence   ] ✗ WRONG   len=13  optimal=7
+
+─── Case 26/50  optimal_distance=7  U: [WG|WO]  D: [YB|YW]  F: [BB|BW]  B: [YO|GG]  L: [GR|RR]  R: [YO|OR]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=11  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=12  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 27/50  optimal_distance=7  U: [WG|YG]  D: [GB|GR]  F: [RR|OO]  B: [RB|BO]  L: [OB|WY]  R: [WY|YW]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=11  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 28/50  optimal_distance=7  U: [OR|YO]  D: [YR|BB]  F: [GY|BG]  B: [WG|OO]  L: [WR|YR]  R: [GB|WW]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=12  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=17  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 29/50  optimal_distance=7  U: [OR|GW]  D: [GO|OG]  F: [OR|YY]  B: [BY|RB]  L: [GW|WR]  R: [BY|BW]
+  [face_grid       ] ✗ WRONG   len=14  optimal=7
+  [compact_string  ] ✗ WRONG   len=6  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=7
+  [move_sequence   ] ✗ WRONG   len=12  optimal=7
+
+─── Case 30/50  optimal_distance=7  U: [RB|RW]  D: [GR|YO]  F: [YO|RB]  B: [OB|WO]  L: [WG|GW]  R: [GY|YB]
+  [face_grid       ] ✗ WRONG   len=8  optimal=7
+  [compact_string  ] ✗ WRONG   len=11  optimal=7
+  [corner_cubies   ] ✗ WRONG   len=10  optimal=7
+  [move_sequence   ] ✓ SOLVED  len=11  optimal=7
+
+─── Case 31/50  optimal_distance=9  U: [RB|YB]  D: [OO|RG]  F: [RW|GY]  B: [WW|OY]  L: [GB|GW]  R: [RO|BY]
+  [face_grid       ] ✗ WRONG   len=14  optimal=9
+  [compact_string  ] ✗ WRONG   len=9  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 32/50  optimal_distance=9  U: [BR|GW]  D: [WY|OY]  F: [OB|GG]  B: [WR|OG]  L: [YW|YR]  R: [OB|RB]
+  [face_grid       ] ✗ WRONG   len=8  optimal=9
+  [compact_string  ] ✗ WRONG   len=7  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=9
+  [move_sequence   ] ✗ WRONG   len=16  optimal=9
+
+─── Case 33/50  optimal_distance=9  U: [OG|GB]  D: [YR|WG]  F: [RR|OW]  B: [WY|WO]  L: [GY|BB]  R: [YR|BO]
+  [face_grid       ] ✗ WRONG   len=8  optimal=9
+  [compact_string  ] ✗ WRONG   len=9  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=15  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 34/50  optimal_distance=9  U: [YY|BG]  D: [WY|RO]  F: [OR|OR]  B: [GG|WW]  L: [OY|BG]  R: [WR|BB]
+  [face_grid       ] ✗ WRONG   len=11  optimal=9
+  [compact_string  ] ✗ WRONG   len=8  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 35/50  optimal_distance=9  U: [YG|BG]  D: [GY|BO]  F: [WW|YO]  B: [WB|BR]  L: [RO|WR]  R: [OR|GY]
+  [face_grid       ] ✗ WRONG   len=7  optimal=9
+  [compact_string  ] ✗ WRONG   len=8  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=15  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 36/50  optimal_distance=9  U: [WY|WB]  D: [RR|BY]  F: [GY|GG]  B: [RR|GW]  L: [BO|OY]  R: [OB|WO]
+  [face_grid       ] ✗ WRONG   len=11  optimal=9
+  [compact_string  ] ✗ WRONG   len=7  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 37/50  optimal_distance=9  U: [GW|OB]  D: [GO|WB]  F: [YW|YB]  B: [RO|RG]  L: [YB|OR]  R: [RG|WY]
+  [face_grid       ] ✗ WRONG   len=7  optimal=9
+  [compact_string  ] ✗ WRONG   len=7  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=15  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 38/50  optimal_distance=9  U: [OB|YG]  D: [GR|OB]  F: [OY|WG]  B: [RB|RB]  L: [YG|WO]  R: [RW|WY]
+  [face_grid       ] ✗ WRONG   len=13  optimal=9
+  [compact_string  ] ✗ WRONG   len=7  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=14  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 39/50  optimal_distance=9  U: [YO|OR]  D: [RO|GB]  F: [BW|BG]  B: [WB|YR]  L: [RW|YW]  R: [GG|YO]
+  [face_grid       ] ✗ WRONG   len=8  optimal=9
+  [compact_string  ] ✗ WRONG   len=9  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=9
+  [move_sequence   ] ✓ SOLVED  len=13  optimal=9
+
+─── Case 40/50  optimal_distance=9  U: [OB|BG]  D: [BR|YG]  F: [OO|WY]  B: [WG|RR]  L: [WY|BR]  R: [YO|GW]
+  [face_grid       ] ✗ WRONG   len=11  optimal=9
+  [compact_string  ] ✗ WRONG   len=10  optimal=9
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=9
+  [move_sequence   ] ✗ WRONG   len=12  optimal=9
+
+─── Case 41/50  optimal_distance=11  U: [OO|RR]  D: [RR|OO]  F: [WW|GB]  B: [YY|GB]  L: [GB|WY]  R: [GB|YW]
+  [face_grid       ] ✗ WRONG   len=4  optimal=11
+  [compact_string  ] ✗ WRONG   len=4  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=5  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 42/50  optimal_distance=11  U: [BW|GY]  D: [YB|WG]  F: [OR|GO]  B: [OR|RB]  L: [YW|RO]  R: [GB|YW]
+  [face_grid       ] ✗ WRONG   len=7  optimal=11
+  [compact_string  ] ✗ WRONG   len=7  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=11
+  [move_sequence   ] ✗ WRONG   len=16  optimal=11
+
+─── Case 43/50  optimal_distance=11  U: [BB|WB]  D: [GG|YR]  F: [GR|OR]  B: [RO|WB]  L: [WO|OY]  R: [YW|YG]
+  [face_grid       ] ✗ WRONG   len=8  optimal=11
+  [compact_string  ] ✗ WRONG   len=10  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=9  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 44/50  optimal_distance=11  U: [RO|BB]  D: [GY|GW]  F: [RR|OB]  B: [WW|BR]  L: [GW|YY]  R: [YG|OO]
+  [face_grid       ] ✗ WRONG   len=10  optimal=11
+  [compact_string  ] ✗ WRONG   len=5  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 45/50  optimal_distance=11  U: [BG|GG]  D: [WY|GR]  F: [WO|RB]  B: [RO|YO]  L: [WR|WB]  R: [YY|OB]
+  [face_grid       ] ✗ WRONG   len=8  optimal=11
+  [compact_string  ] ✗ WRONG   len=9  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 46/50  optimal_distance=11  U: [RB|WB]  D: [GO|YY]  F: [RY|WB]  B: [RG|GR]  L: [YG|BO]  R: [OW|WO]
+  [face_grid       ] ✗ WRONG   len=10  optimal=11
+  [compact_string  ] ✗ WRONG   len=5  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=13  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 47/50  optimal_distance=11  U: [GY|GR]  D: [YB|GB]  F: [OY|OR]  B: [GR|OY]  L: [WW|OB]  R: [BR|WW]
+  [face_grid       ] ✗ WRONG   len=8  optimal=11
+  [compact_string  ] ✗ WRONG   len=7  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=4  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 48/50  optimal_distance=11  U: [YO|GB]  D: [GB|YR]  F: [OW|RW]  B: [YR|YO]  L: [GW|GW]  R: [RB|OB]
+  [face_grid       ] ✗ WRONG   len=8  optimal=11
+  [compact_string  ] ✗ WRONG   len=7  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 49/50  optimal_distance=11  U: [YY|YG]  D: [RB|GO]  F: [OY|BW]  B: [RO|GW]  L: [BG|RW]  R: [RB|OW]
+  [face_grid       ] ✗ WRONG   len=8  optimal=11
+  [compact_string  ] ✗ WRONG   len=11  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=11  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+─── Case 50/50  optimal_distance=11  U: [BW|OY]  D: [RY|BW]  F: [YR|YO]  B: [GW|GW]  L: [RB|OB]  R: [GO|GR]
+  [face_grid       ] ✗ WRONG   len=11  optimal=11
+  [compact_string  ] ✗ WRONG   len=9  optimal=11
+  [corner_cubies   ] ✗ WRONG   len=8  optimal=11
+  [move_sequence   ] ✓ SOLVED  len=15  optimal=11
+
+========================================================================
+RESULTS SUMMARY
+========================================================================
+Representation        d=3  d=5  d=7  d=9  d=11  Total
+------------------------------------------------------------------------
+face_grid             0/10  0/10  0/10  0/10  0/10   0/50
+compact_string        0/10  0/10  0/10  0/10  0/10   0/50
+corner_cubies         0/10  0/10  0/10  0/10  0/10   0/50
+move_sequence         9/10  9/10  8/10  8/10  9/10   43/50
+========================================================================
+
+Mean solution length vs optimal (solved cases only):
+  face_grid             no solved cases
+  compact_string        no solved cases
+  corner_cubies         no solved cases
+  move_sequence         mean_len=11.0  mean_gap=4.0  (n=43)

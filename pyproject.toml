@@ -11,6 +11,9 @@ dependencies = [
     "plotly>=5.0.0",
     "kaleido>=1.2.0",
     "anthropic>=0.96.0",
+    "groq>=0.11.0",
+    "google-genai>=1.0.0",
+    "openai>=1.0.0",
 ]
 
 [project.scripts]
@@ -34,7 +37,6 @@ build-backend = "hatchling.build"
 "analysis/patch.py" = "analysis/patch.py"
 "analysis/tuned_lens.py" = "analysis/tuned_lens.py"
 "analysis/sae.py" = "analysis/sae.py"
-
 [dependency-groups]
 dev = [
     "jupyter>=1.1.1",

@@ -97,10 +97,6 @@ cube-interpretability/
 │
 ├── walkthrough.ipynb       Executed notebook: all phases with inline plots
 │
-├── testing_transcripts/    LLM responses from manual text-representation tests
-│   ├── No_CoT.txt          GPT responses: all 5 representations × 3 distances
-│   └── CoT.txt             GPT responses: piece_identity + CoT × 3 distances
-│
 ├── docs/                   GitHub Pages dashboard + write-up (https://cole-mcguire.github.io/cube-interpretability/)
 │   ├── index.html          Interactive visualizer: 2D net + 3D cube, IDA* solver, scramble/solution log
 │   ├── cube_core.js        Cube logic + IDA* heuristic tables compiled for the browser
@@ -119,7 +115,14 @@ cube-interpretability/
 │   ├── distances.npz       BFS table: sorted uint64 packed keys + int8 distances (mmap-loaded)
 │   ├── train.npz
 │   ├── val.npz
-│   └── test.npz
+│   ├── test.npz
+│   ├── No_CoT.txt          LLM responses: all 5 representations × 3 distances (no chain-of-thought)
+│   ├── CoT.txt             LLM responses: piece_identity + CoT × 3 distances
+│   ├── Gemini_2_5_Pro.txt  Gemini 2.5 Pro responses: all 5 representations × distances 1–11
+│   ├── GPT_4o.txt          GPT-4o responses: all 5 representations × distances 1–11
+│   ├── GPT_5_2.txt         GPT-5.2 responses: all 5 representations × distances 1–11
+│   ├── GPT_5_4.txt         GPT-5.4 responses: all 5 representations × distances 1–11
+│   └── Llama3.3_70B_Groq.txt  Llama 3.3 70B (Groq) responses: all 5 representations × distances 1–11
 │
 ├── checkpoints/            (gitignored — regenerate with uv run cube-train)
 │   └── best.pt

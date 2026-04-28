@@ -5,7 +5,8 @@ __pycache__/
 .venv/
 
 # Large data files — regenerate with `uv run cube-dataset`
-data/
+data/*.npz
+data/*.pkl
 
 # Model checkpoints — regenerate with `uv run cube-train`
 checkpoints/

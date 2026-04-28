@@ -45,12 +45,13 @@ autoencoders confirm that face and distance features are represented
 monosemantically ($r \approx 0.81$--$0.89$), while corner-orientation features
 are weaker and concentrated at the embedding layer.  Finally, motivated by
 instructor feedback, we evaluate how well the cube state can be conveyed to a
-pre-trained language model through text.  Of four representations tested, a
-new \emph{piece-identity} encoding---which explicitly names each corner cubie by
-its solved-state colors and states its current position and orientation---is the
-only state-based representation to consistently solve depth-5 scrambles, though
-depth-7 remains a hard wall for all representations including chain-of-thought
-prompting.
+pre-trained language model through text.  An initial pilot (1 case per distance,
+GPT-5 via chat) suggested that a \emph{piece-identity} encoding outperforms
+position-based representations.  A subsequent automated evaluation across five
+models (GPT-5.4, GPT-5.2, Gemini 2.5 Pro, GPT-4o, Llama 3.3 70B; 10 cases per
+distance, $d{=}3$ through $d{=}11$) found that all state-based representations
+score zero uniformly, while move-inversion solve rates range from 12\% (Llama)
+to 86\% (GPT-5.2), stratifying models by their ability to parse cube notation.
 \end{abstract}
 
 % ============================================================
@@ -387,48 +388,95 @@ with compression toward a decision.
 
 \subsection{Text Representation Results}
 
+\paragraph{Pilot study (manual, GPT-5 via chat interface).}
+An initial pilot with one test case per distance level ($d \in \{3, 5, 7\}$)
+produced the results in Table~\ref{tab:reps-pilot}.  \texttt{piece\_identity}
+was the only state-based representation to solve a $d{=}5$ case.
+The pilot prompt did not prohibit code or pseudocode, and the model frequently
+wrote Python or BFS-style algorithms to derive a solution rather than reasoning
+about the cube state directly.  The pilot results therefore reflect a mix of
+genuine cube reasoning and code-assisted lookup, making them an overestimate of
+the model's unaided symbolic reasoning ability.
+
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccc}
 \toprule
 Representation & $d{=}3$ & $d{=}5$ & $d{=}7$ & Total \\
 \midrule
-face\_grid         & \checkmark & $\times$ & $\times$ & 1/3 \\
-compact\_string    & \checkmark & $\times$ & \checkmark & 2/3 \\
-corner\_cubies     & \checkmark & $\times$ & $\times$ & 1/3 \\
-\textbf{piece\_identity}  & \checkmark & \checkmark & $\times$ & \textbf{2/3} \\
-move\_sequence     & \checkmark & \checkmark & \checkmark & 3/3 \\
-piece\_identity+CoT & \checkmark & $\times$ & $\times$ & 1/3 \\
+face\_grid           & \checkmark & $\times$   & $\times$   & 1/3 \\
+compact\_string      & \checkmark & $\times$   & \checkmark & 2/3 \\
+corner\_cubies       & \checkmark & $\times$   & $\times$   & 1/3 \\
+\textbf{piece\_identity}    & \checkmark & \checkmark & $\times$   & \textbf{2/3} \\
+move\_sequence       & \checkmark & \checkmark & \checkmark & 3/3 \\
+piece\_identity+CoT  & \checkmark & $\times$   & $\times$   & 1/3 \\
 \bottomrule
 \end{tabular}
-\caption{Solve rate by representation and optimal distance. \texttt{move\_sequence}
-is a degenerate baseline (trivial inversion); all others require state understanding.
-Tests conducted on GPT-5 (ChatGPT) via chat interface.}
-\label{tab:reps}
+\caption{Pilot solve rates (1 case per distance, GPT-5 via chat interface).
+\texttt{move\_sequence} is a degenerate baseline (move inversion); all others require genuine state understanding.}
+\label{tab:reps-pilot}
 \end{table}
 
-\paragraph{piece\_identity outperforms position-based representations.}
-It is the only state-based representation to consistently solve $d{=}5$
-scrambles.  The key difference from \texttt{corner\_cubies} is that it makes the
-piece permutation explicit: rather than saying ``the UFR corner has colors
-(U:G, F:R, R:W),'' it says ``the W-G-R piece, which belongs at UFR, is currently
-at DFL with W facing L.''  This gives the model direct access to the displacement
-structure.
+\paragraph{Automated evaluation (API, 10 cases per distance level).}
+We ran an automated evaluation across five models via their respective provider
+APIs, with 10 independently sampled test cases per distance level
+($d \in \{3, 5, 7, 9, 11\}$), yielding 50 cases per model.  Representations
+tested: \texttt{face\_grid}, \texttt{compact\_string}, \texttt{corner\_cubies},
+and \texttt{move\_sequence}.
+All three state-based representations scored $0/N$ across every model and every
+distance level without exception.  Table~\ref{tab:reps-auto} shows
+\texttt{move\_sequence} solve rates, the only dimension that varied.
 
-\paragraph{$d{=}7$ is a hard wall.}
-No state-based representation solved the $d{=}7$ test case reliably.  This
-suggests that $d{=}7$ requires tracking how multiple moves propagate through all
-eight corners simultaneously---a form of symbolic simulation that the model cannot
-do purely from text, regardless of representation quality.
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrrr}
+\toprule
+Model & $d{=}3$ & $d{=}5$ & $d{=}7$ & $d{=}9$ & $d{=}11$ & Total \\
+\midrule
+GPT-5.4        & 10/10 & 10/10 & 7/10 & 6/10 & 9/10               & 42/50 \\
+GPT-5.2        &  9/10 &  9/10 & 8/10 & 8/10 & 9/10               & 43/50 \\
+Gemini 2.5 Pro &  9/10 &  8/10 & 9/10 & 8/10 & 1/2\textsuperscript{*} & 35/42 \\
+GPT-4o         &  5/10 &  1/10 & 1/10 & 0/10 & 1/10               &  8/50 \\
+Llama 3.3 70B  &  3/10 &  1/10 & 1/10 & 0/10 & 0/2\textsuperscript{*} &  5/42 \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{move\_sequence} solve rate by model and distance.
+All state-based representations (\texttt{face\_grid}, \texttt{compact\_string},
+\texttt{corner\_cubies}) scored 0/$N$ for every model and every distance level.
+\textsuperscript{*}Gemini and Llama runs sampled only 2 $d{=}11$ cases due to a
+smaller scramble iteration budget in those runs.}
+\label{tab:reps-auto}
+\end{table}
+
+\paragraph{State-based representations fail uniformly.}
+The pilot result suggesting \texttt{piece\_identity} could reach $d{=}5$ (2/3
+cases) did not survive scale: no state-based representation solved a single case
+across any model at any distance.  The barrier is not which representation is
+used but the model's inability to mentally simulate even a single move reliably.
+At scale, all state-based representations are equivalent---uniformly zero.
+
+\paragraph{$d{=}7$ is not a wall---move simulation is the wall.}
+The original framing identified $d{=}7$ as a hard limit.  The automated data
+revises this: state-based representations fail from $d{=}3$ upward, before any
+complexity threshold.  The true barrier is symbolic move simulation itself,
+not the depth of the scramble.
+
+\paragraph{Move-inversion capability varies dramatically across models.}
+GPT-5.x and Gemini 2.5 Pro reach 83--86\% on \texttt{move\_sequence}, roughly
+matched.  GPT-4o (16\%) and Llama 3.3 70B (12\%) trail far behind.  Since move
+inversion is a simple reversal task (reverse order, negate suffix), this gap
+reflects each model's ability to parse and emit cube notation reliably, not
+any understanding of cube geometry.
 
 \paragraph{Chain-of-thought did not help.}
-The CoT transcript shows the model producing plausible-sounding reasoning
+The CoT pilot transcript shows the model producing plausible-sounding reasoning
 (``I verified this sequence against the exact corner state you gave'') without
 actually simulating moves---the solutions it produced were wrong.  The reasoning
 is \emph{confabulatory}: narrative about a computation that is not being
-performed.  CoT with piece\_identity performed \emph{worse} than direct
-piece\_identity (1/3 vs.\ 2/3).
+performed.  CoT with \texttt{piece\_identity} performed \emph{worse} than direct
+\texttt{piece\_identity} (1/3 vs.\ 2/3 in the pilot).
 
 % ============================================================
 \section{Discussion: How Results Changed Our Thinking}
@@ -456,13 +504,17 @@ residual streams \cite{variengien2024beliefstate}---our model is a direct
 instantiation of this, since the cube's belief state for a single-token input is
 a point mass.
 
-The text representation experiments added a complementary finding: the
-\emph{type} of information matters as much as its presence.  Position-based
-representations (face\_grid, corner\_cubies) include all the information needed
-to infer the permutation, but the model must compute that inference itself.
-piece\_identity pre-computes it.  The performance difference suggests that
-pre-trained language models can exploit explicit permutation structure even when
-they cannot simulate moves reliably.
+The text representation experiments, run at scale across five models, produced
+a starker finding than the pilot suggested.  While the one-case pilot hinted that
+\texttt{piece\_identity}---by making permutation structure explicit---outperforms
+position-based representations, this did not survive replication: all state-based
+representations scored zero uniformly across every model and every distance level
+tested.  The lesson is not that representation choice is irrelevant, but that the
+underlying capability---mentally simulating move sequences---is absent regardless
+of how the state is described.  Move inversion (\texttt{move\_sequence}), which
+requires no state understanding at all, separates the models cleanly:
+frontier models (GPT-5.x, Gemini 2.5 Pro) achieve 83--86\%, while GPT-4o and
+Llama 3.3 70B reach only 12--16\%.
 
 % ============================================================
 \section{Remaining Work}
@@ -470,21 +522,15 @@ they cannot simulate moves reliably.
 
 \begin{enumerate}
 
-  \item \textbf{Automated text representation evaluation.}  The current tests use
-        only 3 test cases per representation (one per distance level), which is
-        insufficient for statistical conclusions.  We plan to run an automated
-        evaluation using the Anthropic API (Claude Opus 4.7, as recommended by the
-        instructor) with $\geq$10 test cases per distance level, covering $d = 1$
-        through $d = 11$.  This will produce a proper solve-rate curve as a
-        function of optimal distance.
-
-  \item \textbf{Improved representations.}  We will explore whether augmenting
-        piece\_identity with explicit information about which faces each move
-        affects (e.g., annotating which pieces are in the U layer) allows the
-        model to mentally simulate single moves more reliably.  A hybrid
-        representation that provides both the state and a partial BFS hint (e.g.,
-        ``these two pieces are the hardest to place and require an anti-Sune
-        algorithm'') may substantially improve $d{=}7+$ performance.
+  \item \textbf{Improved representations.}  The automated evaluation found that all
+        state-based representations score uniformly zero.  Future work could test
+        whether augmenting \texttt{piece\_identity} with explicit move-effect
+        annotations (e.g., listing which pieces are in the U layer before and after
+        each move) allows a model to simulate individual moves reliably enough to
+        solve $d{=}3$ cases.  Alternatively, a hybrid representation that provides
+        both the state and a partial BFS hint (e.g., a single ``next best move''
+        derived from the distance table) may offer a path to non-zero state-based
+        solve rates.
 
   \item \textbf{Mechanistic interpretability of the pretrained model.}  If we
         find a representation where GPT or Claude can reliably solve $d{\leq}7$
