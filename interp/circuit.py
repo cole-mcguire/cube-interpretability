@@ -325,77 +325,59 @@ def compute_neuron_dla(
 # Plotting
 # ---------------------------------------------------------------------------
 
-def plot_dla(
-    dla_correct: dict[str, np.ndarray],
-    n_layers: int,
-    out_path: Path,
-) -> None:
+def _fig_div(fig, first: bool = False) -> str:
+    """Return a Plotly figure as an HTML div string."""
+    return fig.to_html(
+        full_html=False,
+        include_plotlyjs="cdn" if first else False,
+    )
+
+
+def _build_dla_fig(dla_correct: dict[str, np.ndarray], n_layers: int):
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
-    comps   = component_names(n_layers)
-    means   = [dla_correct[c].mean() for c in comps]
-    stds    = [dla_correct[c].std()  for c in comps]
-
-    colors = []
-    for c in comps:
-        if c == "embed":
-            colors.append("#3b82f6")
-        elif c.startswith("attn"):
-            colors.append("#f59e0b")
-        else:
-            colors.append("#10b981")
-
+    comps  = component_names(n_layers)
+    means  = [dla_correct[c].mean() for c in comps]
+    stds   = [dla_correct[c].std()  for c in comps]
+    colors = [
+        "#3b82f6" if c == "embed" else "#f59e0b" if c.startswith("attn") else "#10b981"
+        for c in comps
+    ]
     fig = go.Figure(go.Bar(
-        x=comps,
-        y=means,
+        x=comps, y=means,
         error_y=dict(type="data", array=stds, visible=True),
         marker_color=colors,
         hovertemplate="%{x}<br>mean DLA: %{y:.3f}<extra></extra>",
     ))
     fig.update_layout(
-        title="Phase 7: Direct Logit Attribution by Component",
+        title="Direct Logit Attribution by Component",
         xaxis_title="Component",
         yaxis_title="Mean correct-class logit attribution",
-        plot_bgcolor="#0f172a",
-        paper_bgcolor="#1e293b",
+        plot_bgcolor="#0f172a", paper_bgcolor="#1e293b",
         font=dict(color="#e2e8f0"),
         xaxis=dict(gridcolor="#334155"),
         yaxis=dict(gridcolor="#334155", zeroline=True, zerolinecolor="#475569"),
         height=450,
     )
-    fig.write_html(str(out_path))
-    print(f"Wrote {out_path}")
+    return fig
 
 
-def plot_patching(
+def _build_patching_fig(
     patch_results: dict[str, np.ndarray],
     n_layers: int,
     n_classes: int,
-    out_path: Path,
-) -> None:
+):
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
     comps = component_names(n_layers)
-    # Summary: for each component, how much does mean-ablation (patch with
-    # overall-mean, i.e., class-average of class-means) shift the prediction?
-    # Summarise as: |mean_pred_patched - src_distance| averaged over diagonal
-    # (i.e., how much does patching with the correct class recover vs. ablating)
-
-    # Simpler summary: for each component, compute the mean diagonal of the
-    # patch matrix (src == tgt → "identity patch", should reproduce original pred)
-    # vs. off-diagonal mean (patching with a different class).
-    # The "sensitivity" = diagonal_mean - off_diagonal_mean
-
     sensitivities = []
     for comp in comps:
-        mat = patch_results[comp]                                  # (n_classes, n_classes)
-        diag_vals  = mat[np.arange(n_classes), np.arange(n_classes)]
-        off_diag   = mat[~np.eye(n_classes, dtype=bool)]
+        mat = patch_results[comp]
+        diag_vals = mat[np.arange(n_classes), np.arange(n_classes)]
+        off_diag  = mat[~np.eye(n_classes, dtype=bool)]
         sensitivities.append(float(diag_vals.mean() - off_diag.mean()))
 
-    # Also plot the full matrix for the most sensitive component
     most_sensitive = comps[int(np.argmax(np.abs(sensitivities)))]
     mat = patch_results[most_sensitive]
 
@@ -407,16 +389,14 @@ def plot_patching(
             f"Full patch matrix: {most_sensitive}",
         ],
     )
-
-    colors = ["#3b82f6" if c == "embed" else "#f59e0b" if c.startswith("attn") else "#10b981"
-              for c in comps]
+    colors = [
+        "#3b82f6" if c == "embed" else "#f59e0b" if c.startswith("attn") else "#10b981"
+        for c in comps
+    ]
     fig.add_trace(go.Bar(
-        x=comps, y=sensitivities,
-        marker_color=colors,
-        name="sensitivity",
+        x=comps, y=sensitivities, marker_color=colors, name="sensitivity",
         hovertemplate="%{x}<br>sensitivity: %{y:.3f}<extra></extra>",
     ), row=1, col=1)
-
     fig.add_trace(go.Heatmap(
         z=mat,
         x=[f"tgt d={d}" for d in range(n_classes)],
@@ -425,27 +405,18 @@ def plot_patching(
         colorbar=dict(title="mean pred dist"),
         hovertemplate="src=%{y}  tgt=%{x}<br>mean pred: %{z:.2f}<extra></extra>",
     ), row=1, col=2)
-
     fig.update_layout(
-        title="Phase 7: Activation Patching",
-        plot_bgcolor="#0f172a",
-        paper_bgcolor="#1e293b",
+        title="Activation Patching",
+        plot_bgcolor="#0f172a", paper_bgcolor="#1e293b",
         font=dict(color="#e2e8f0"),
         xaxis=dict(gridcolor="#334155"),
         yaxis=dict(gridcolor="#334155", zeroline=True, zerolinecolor="#475569"),
-        height=500,
-        showlegend=False,
+        height=500, showlegend=False,
     )
-    fig.write_html(str(out_path))
-    print(f"Wrote {out_path}")
+    return fig
 
 
-def plot_neurons(
-    neuron_dla: list[np.ndarray],
-    n_layers: int,
-    out_path: Path,
-    top_k: int = 20,
-) -> None:
+def _build_neurons_fig(neuron_dla: list[np.ndarray], n_layers: int, top_k: int = 20):
     import plotly.graph_objects as go
 
     layer_colors = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e"]
@@ -454,7 +425,6 @@ def plot_neurons(
     all_means: list[float] = []
     all_layers: list[int]  = []
     all_indices: list[int] = []
-
     for i, dla in enumerate(neuron_dla):
         for j, v in enumerate(dla):
             all_means.append(float(v))
@@ -462,47 +432,95 @@ def plot_neurons(
             all_indices.append(j)
 
     all_means_arr = np.array(all_means)
-
     for i in range(n_layers):
         mask = np.array(all_layers) == i
-        x    = np.array(all_indices)[mask]
-        y    = all_means_arr[mask]
         fig.add_trace(go.Scatter(
-            x=x, y=y,
+            x=np.array(all_indices)[mask], y=all_means_arr[mask],
             mode="markers",
             marker=dict(size=4, color=layer_colors[i % len(layer_colors)], opacity=0.6),
             name=f"MLP {i}",
             hovertemplate=f"MLP {i}  neuron %{{x}}<br>DLA: %{{y:.4f}}<extra></extra>",
         ))
 
-    # Annotate top-k neurons by absolute DLA
     top_idx = np.argsort(np.abs(all_means_arr))[-top_k:]
     for idx in top_idx:
         fig.add_annotation(
-            x=all_indices[idx],
-            y=all_means[idx],
+            x=all_indices[idx], y=all_means[idx],
             text=f"L{all_layers[idx]}N{all_indices[idx]}",
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=0.8,
-            arrowwidth=1,
-            arrowcolor="#64748b",
-            font=dict(size=9, color="#94a3b8"),
+            showarrow=True, arrowhead=2, arrowsize=0.8, arrowwidth=1,
+            arrowcolor="#64748b", font=dict(size=9, color="#94a3b8"),
             ax=20, ay=-20,
         )
 
     fig.update_layout(
-        title="Phase 7: Neuron DLA — per-neuron correct-class logit attribution",
+        title="Neuron DLA — per-neuron correct-class logit attribution",
         xaxis_title="Neuron index within MLP layer",
         yaxis_title="Mean correct-class logit attribution",
-        plot_bgcolor="#0f172a",
-        paper_bgcolor="#1e293b",
+        plot_bgcolor="#0f172a", paper_bgcolor="#1e293b",
         font=dict(color="#e2e8f0"),
         xaxis=dict(gridcolor="#334155"),
         yaxis=dict(gridcolor="#334155", zeroline=True, zerolinecolor="#475569"),
         height=500,
     )
-    fig.write_html(str(out_path))
+    return fig
+
+
+NAV = """\
+<style>
+*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+body {{ background: #0f172a; color: #e2e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; }}
+header {{ background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }}
+header h1 {{ font-size: 14px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }}
+nav {{ display: flex; gap: 6px; flex-wrap: wrap; }}
+nav a {{ color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }}
+nav a:hover {{ color: #e2e8f0; background: #334155; }}
+nav a[aria-current="page"] {{ color: #f1f5f9; background: #334155; border-color: #475569; }}
+</style>
+<header>
+  <h1>2×2 Cube Interpretability</h1>
+  <nav>
+    <a href="index.html">Visualizer</a>
+    <a href="probe_results.html">Phase 4 — Probing</a>
+    <a href="patch_results.html">Phase 5a — Patching</a>
+    <a href="patch_cf_results.html">Phase 5a — Counterfactual</a>
+    <a href="tuned_lens_results.html">Phase 5b — Tuned Lens</a>
+    <a href="sae_results.html">Phase 5c — SAE</a>
+    <a href="circuit_results.html" aria-current="page">Phase 7 — Circuit</a>
+    <a href="progress_report.pdf">Progress Report ↗</a>
+  </nav>
+</header>
+"""
+
+
+def write_circuit_page(
+    dla_correct: dict[str, np.ndarray],
+    patch_results: dict[str, np.ndarray],
+    neuron_dla: list[np.ndarray],
+    n_layers: int,
+    n_classes: int,
+    out_path: Path,
+) -> None:
+    fig_dla     = _build_dla_fig(dla_correct, n_layers)
+    fig_patch   = _build_patching_fig(patch_results, n_layers, n_classes)
+    fig_neurons = _build_neurons_fig(neuron_dla, n_layers)
+
+    div_dla     = _fig_div(fig_dla,     first=True)
+    div_patch   = _fig_div(fig_patch,   first=False)
+    div_neurons = _fig_div(fig_neurons, first=False)
+
+    html = (
+        "<!DOCTYPE html>\n<html>\n<head>\n"
+        '<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n'
+        "<title>Phase 7 — Circuit Identification</title>\n"
+        "</head>\n<body>\n"
+        + NAV
+        + div_dla + "\n"
+        + div_patch + "\n"
+        + div_neurons + "\n"
+        + "</body>\n</html>\n"
+    )
+    out_path.write_text(html, encoding="utf-8")
     print(f"Wrote {out_path}")
 
 
@@ -570,9 +588,11 @@ def main(args: argparse.Namespace) -> None:
         out_dir = Path(args.out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         print("\nGenerating plots…")
-        plot_dla(dla_correct, n_layers, out_dir / "circuit_dla.html")
-        plot_patching(patch_results, n_layers, n_classes, out_dir / "circuit_patch.html")
-        plot_neurons(neuron_dla, n_layers, out_dir / "circuit_neurons.html")
+        write_circuit_page(
+            dla_correct, patch_results, neuron_dla,
+            n_layers, n_classes,
+            out_dir / "circuit_results.html",
+        )
 
 
 def parse_args() -> argparse.Namespace:
