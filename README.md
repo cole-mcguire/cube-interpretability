@@ -19,6 +19,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 11. **Weight-level analysis** — SVD of the embedding matrix, direct read-out path accuracy, and per-neuron input/output profiles close the loop on the circuit
 12. **Training dynamics** — re-trains with per-epoch checkpoints, then tracks per-distance accuracy, layer-wise probe MAE, and component DLA over time to reveal phase transitions
 13. **Next-move prediction variant** — re-trains on next-move prediction (18 classes) and probes for optimal distance, testing whether distance representation emerges under a different supervision signal
+14. **Superposition analysis** — sweeps SAE expansion ratios (1×–16×) to estimate how many true features the model represents; R² plateau and dead-feature count identify the effective feature count per layer
 
 ## File map
 
@@ -57,8 +58,10 @@ cube-interpretability/
 │   │                       Embedding SVD, direct read-out path, top neuron profiles
 │   ├── grokking.py         Phase 9 — training dynamics / grokking
 │   │                       Per-distance accuracy, layer probe MAE, DLA over epochs
-│   └── next_move.py        Phase 10 — next-move prediction variant
-│                           Probes next-move model for optimal distance vs distance model
+│   ├── next_move.py        Phase 10 — next-move prediction variant
+│   │                       Probes next-move model for optimal distance vs distance model
+│   └── superposition.py    Phase 11 — SAE expansion sweep
+│                           R², active features, dead fraction vs expansion ratio
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -83,6 +86,7 @@ cube-interpretability/
 │   ├── weights_results.html  Phase 8 — Weight-level analysis results
 │   ├── grokking_results.html Phase 9 — Training dynamics results (generated after retraining)
 │   ├── next_move_results.html Phase 10 — Next-move variant comparison
+│   ├── superposition_results.html Phase 11 — SAE expansion sweep results
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -177,6 +181,9 @@ uv run python -m interp.grokking
 # Phase 10: next-move prediction variant
 uv run python train.py --task next_move --out checkpoints/next_move
 uv run python -m interp.next_move
+
+# Phase 11: superposition analysis (SAE expansion sweep)
+uv run python -m interp.superposition
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
