@@ -282,10 +282,21 @@ NAV_CSS = """\
 body { background: #0f172a; color: #e2e8f0; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
 header { background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 header h1 { font-size: 14px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
-nav { display: flex; gap: 6px; flex-wrap: wrap; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 nav a { color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }
 nav a:hover { color: #e2e8f0; background: #334155; }
 nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group { position: relative; }
+.nav-group-btn { color: #94a3b8; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; cursor: pointer; white-space: nowrap; font-family: inherit; transition: color .15s, background .15s; }
+.nav-group-btn:hover, .nav-group:focus-within .nav-group-btn { color: #e2e8f0; background: #334155; }
+.nav-group-btn.active { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px; min-width: 220px; z-index: 100; flex-direction: column; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.nav-group:hover .nav-group-menu, .nav-group:focus-within .nav-group-menu { display: flex; }
+.nav-group-menu a { border-radius: 4px; }
+.page-intro { max-width: 860px; padding: 18px 20px 4px; }
+.page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
+.page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
+.page-intro strong { color: #cbd5e1; }
 </style>"""
 
 NAV_BODY = """\
@@ -293,19 +304,32 @@ NAV_BODY = """\
   <h1>2×2 Cube Interpretability</h1>
   <nav>
     <a href="index.html">Visualizer</a>
-    <a href="probe_results.html">Phase 4 — Probing</a>
-    <a href="phase5a_results.html">Phase 5a — Patching</a>
-    <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
-    <a href="circuit_results.html">Phase 7 — Circuit</a>
-    <a href="weights_results.html">Phase 8 — Weights</a>
-    <a href="grokking_results.html">Phase 9 — Grokking</a>
-    <a href="next_move_results.html" aria-current="page">Phase 10 — Next Move</a>
-    <a href="superposition_results.html">Phase 11 — Superposition</a>
-    <a href="corner_results.html">Phase 12 — Corner Model</a>
-    <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+    <div class="nav-group">
+      <button class="nav-group-btn active">Analyses ▾</button>
+      <div class="nav-group-menu">
+        <a href="probe_results.html">Phase 4 — Probing</a>
+        <a href="phase5a_results.html">Phase 5a — Patching</a>
+        <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
+        <a href="circuit_results.html">Phase 7 — Circuit</a>
+        <a href="weights_results.html">Phase 8 — Weights</a>
+        <a href="grokking_results.html">Phase 9 — Grokking</a>
+        <a href="next_move_results.html" aria-current="page">Phase 10 — Next Move</a>
+        <a href="superposition_results.html">Phase 11 — Superposition</a>
+        <a href="corner_results.html">Phase 12 — Corner Model</a>
+        <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+      </div>
+    </div>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
 </header>"""
+PAGE_DESCRIPTION = """\
+<section class="page-intro">
+  <h2>Phase 10 — Next-Move Prediction Variant</h2>
+  <p><strong>Question:</strong> Does an implicit distance representation emerge when training on next-move prediction rather than distance classification?</p>
+  <p><strong>Method:</strong> Train an identical architecture on next-move prediction (18 classes); compare per-layer optimal-distance probe MAE against the distance-supervised baseline.</p>
+  <p><strong>Finding:</strong> The next-move task is near-impossible (6.3% vs 5.6% random baseline) — scramble moves are unpredictable from cube state. Both models start at the same embedding MAE (0.98), but only the distance model improves it in transformer blocks (0.40 vs 0.82 at L3).</p>
+</section>"""
+
 
 
 def write_page(figs: list, out_path: Path) -> None:
@@ -316,8 +340,12 @@ def write_page(figs: list, out_path: Path) -> None:
         + NAV_CSS + "\n"
         + "<title>Phase 10 — Next-Move Variant</title>\n"
         "</head>\n<body>\n"
-        + NAV_BODY + "\n"
-        + "\n".join(divs) + "\n"
+        + NAV_BODY + "
+"
+        + PAGE_DESCRIPTION + "
+"
+        + "
+".join(divs) + "\n"
         + "</body>\n</html>\n"
     )
     out_path.write_text(html, encoding="utf-8")

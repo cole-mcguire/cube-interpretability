@@ -11,24 +11,38 @@ nav { display: flex; gap: 6px; flex-wrap: wrap; }
 nav a { color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }
 nav a:hover { color: #e2e8f0; background: #334155; }
 nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group { position: relative; }
+.nav-group-btn { color: #94a3b8; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; cursor: pointer; white-space: nowrap; font-family: inherit; transition: color .15s, background .15s; }
+.nav-group-btn:hover, .nav-group:focus-within .nav-group-btn { color: #e2e8f0; background: #334155; }
+.nav-group-btn.active { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px; min-width: 220px; z-index: 100; flex-direction: column; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.nav-group:hover .nav-group-menu, .nav-group:focus-within .nav-group-menu { display: flex; }
+.nav-group-menu a { border-radius: 4px; }
+.page-intro { max-width: 860px; padding: 18px 20px 4px; }
+.page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
+.page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
+.page-intro strong { color: #cbd5e1; }
 </style><meta charset="utf-8" /></head>
 <body>
 <header>
   <h1>2×2 Cube Interpretability</h1>
   <nav>
     <a href="index.html">Visualizer</a>
-    <a href="probe_results.html">Phase 4 — Probing</a>
-    <a href="patch_results.html">Phase 5a — Patching</a>
-    <a href="patch_cf_results.html">Phase 5a — Counterfactual</a>
-    <a href="tuned_lens_results.html" aria-current="page">Phase 5b — Tuned Lens</a>
-    <a href="sae_results.html">Phase 5c — SAE</a>
-    <a href="circuit_results.html">Phase 7 — Circuit</a>
-    <a href="weights_results.html">Phase 8 — Weights</a>
-    <a href="grokking_results.html">Phase 9 — Grokking</a>
-    <a href="next_move_results.html">Phase 10 — Next Move</a>
-    <a href="superposition_results.html">Phase 11 — Superposition</a>
-    <a href="corner_results.html">Phase 12 — Corner Model</a>
-    <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+    <div class="nav-group">
+      <button class="nav-group-btn">Analyses ▾</button>
+      <div class="nav-group-menu">
+        <a href="probe_results.html">Phase 4 — Probing</a>
+        <a href="phase5a_results.html">Phase 5a — Patching</a>
+        <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
+        <a href="circuit_results.html">Phase 7 — Circuit</a>
+        <a href="weights_results.html">Phase 8 — Weights</a>
+        <a href="grokking_results.html">Phase 9 — Grokking</a>
+        <a href="next_move_results.html">Phase 10 — Next Move</a>
+        <a href="superposition_results.html">Phase 11 — Superposition</a>
+        <a href="corner_results.html">Phase 12 — Corner Model</a>
+        <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+      </div>
+    </div>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
 </header>

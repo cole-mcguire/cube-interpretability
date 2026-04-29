@@ -50,6 +50,51 @@ nav a {
 nav a:hover { color: #e2e8f0; background: #334155; }
 nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
 
+/* ── Intro banner ── */
+#intro {
+  max-width: 1100px;
+  padding: 20px 20px 0;
+}
+#intro p {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.7;
+  max-width: 780px;
+  margin-bottom: 14px;
+}
+#intro strong { color: #cbd5e1; }
+#findings {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.finding-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 200px;
+  max-width: 260px;
+  flex: 1;
+}
+.finding-card a {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #3b82f6;
+  text-decoration: none;
+  margin-bottom: 5px;
+  white-space: nowrap;
+}
+.finding-card a:hover { color: #60a5fa; }
+.finding-card p {
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.55;
+  margin: 0;
+}
+
 /* ── Main layout ── */
 main {
   display: grid;
@@ -266,6 +311,17 @@ hr { border: none; border-top: 1px solid #334155; }
   main { grid-template-columns: 1fr; }
   #controls, #log-section { max-width: 100%; }
 }
+.nav-group { position: relative; }
+.nav-group-btn { color: #94a3b8; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; cursor: pointer; white-space: nowrap; font-family: inherit; transition: color .15s, background .15s; }
+.nav-group-btn:hover, .nav-group:focus-within .nav-group-btn { color: #e2e8f0; background: #334155; }
+.nav-group-btn.active { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px; min-width: 220px; z-index: 100; flex-direction: column; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.nav-group:hover .nav-group-menu, .nav-group:focus-within .nav-group-menu { display: flex; }
+.nav-group-menu a { border-radius: 4px; }
+.page-intro { max-width: 860px; padding: 18px 20px 4px; }
+.page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
+.page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
+.page-intro strong { color: #cbd5e1; }
 </style>
 </head>
 <body>
@@ -274,19 +330,52 @@ hr { border: none; border-top: 1px solid #334155; }
   <h1>2×2 Cube Interpretability</h1>
   <nav>
     <a href="index.html" aria-current="page">Visualizer</a>
-    <a href="probe_results.html">Phase 4 — Probing</a>
-    <a href="phase5a_results.html">Phase 5a — Patching</a>
-    <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
-    <a href="circuit_results.html">Phase 7 — Circuit</a>
-    <a href="weights_results.html">Phase 8 — Weights</a>
-    <a href="grokking_results.html">Phase 9 — Grokking</a>
-    <a href="next_move_results.html">Phase 10 — Next Move</a>
-    <a href="superposition_results.html">Phase 11 — Superposition</a>
-    <a href="corner_results.html">Phase 12 — Corner Model</a>
-    <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+    <div class="nav-group">
+      <button class="nav-group-btn">Analyses ▾</button>
+      <div class="nav-group-menu">
+        <a href="probe_results.html">Phase 4 — Probing</a>
+        <a href="phase5a_results.html">Phase 5a — Patching</a>
+        <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
+        <a href="circuit_results.html">Phase 7 — Circuit</a>
+        <a href="weights_results.html">Phase 8 — Weights</a>
+        <a href="grokking_results.html">Phase 9 — Grokking</a>
+        <a href="next_move_results.html">Phase 10 — Next Move</a>
+        <a href="superposition_results.html">Phase 11 — Superposition</a>
+        <a href="corner_results.html">Phase 12 — Corner Model</a>
+        <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+      </div>
+    </div>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
 </header>
+
+<section id="intro">
+  <p>
+    We train a small transformer to classify how many moves a 2×2×2 Rubik's cube is from solved (0–11),
+    then apply <strong>mechanistic interpretability</strong> tools to understand what it learns and how.
+    The cube is an ideal controlled setting: small enough that every representation can be probed exhaustively,
+    but structurally complex enough to require non-trivial computation.
+    Use the visualizer below to scramble and step through BFS-optimal solutions.
+  </p>
+  <div id="findings">
+    <div class="finding-card">
+      <a href="circuit_results.html">Phase 7 — Circuit</a>
+      <p>mlp_0 provides +5.6 direct logit attribution. The first MLP block carries almost the entire distance signal; attention layers are collectively negative.</p>
+    </div>
+    <div class="finding-card">
+      <a href="probe_results.html">Phase 4 — Probing</a>
+      <p>Optimal distance is 70% linearly decodable at the embedding, rising to 85% at L3. Corner orientation degrades across layers as the model focuses on distance.</p>
+    </div>
+    <div class="finding-card">
+      <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+      <p>In the corner-tokenized model, ablating L0H1 alone drops accuracy 44.9 pp. Layer 0 implements the entire inter-cubie routing circuit; L1–L3 are dispensable.</p>
+    </div>
+    <div class="finding-card">
+      <a href="superposition_results.html">Phase 11 — Superposition</a>
+      <p>R² &gt; 0.999 at 1× SAE expansion. No dead-feature spike, no active-count plateau. This model encodes representations near-orthogonally — no classical superposition.</p>
+    </div>
+  </div>
+</section>
 
 <main>
   <div id="left-col">
