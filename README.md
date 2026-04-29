@@ -287,6 +287,12 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 - The top-8 embedding singular values are nearly equal (3.32–2.87), suggesting the embedding is roughly isotropic and does not preferentially align with any single input direction
 - Top neuron input profiles (fc1.weight[n] @ W_E, reshaped to 24×6) show structured sticker-color selectivity; output profiles (W_U @ fc2.weight[:,n]) reveal which neurons promote specific distance classes vs. suppress them
 
+**Phase 10 — Next-move prediction variant:**
+- A model trained on next-move prediction (18 random scramble moves) achieves only 6.3% val accuracy — barely above the 5.6% random baseline — because scramble moves are unpredictable from cube state alone
+- Despite essentially random training signal, the residual stream encodes *some* distance information: optimal-distance probe MAE drops from 1.77 (predict-mean) to 0.98 at the embedding, then only to 0.82 at L3
+- The distance-supervised model, by contrast, reaches MAE 0.40 at L3 from the same 0.98 embedding start — nearly 2× better
+- Conclusion: the embedding layer independently captures substantial distance structure (both models start at MAE 0.98), but the transformer blocks only build on this when directly supervised; distance representation does not emerge as a byproduct of next-move training
+
 ## References
 
 - Alain & Bengio (2016) — [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
