@@ -2,6 +2,8 @@
 
 A mechanistic interpretability project using the 2×2×2 Rubik's cube as a controlled setting. We train a small transformer on optimal-distance classification, then probe and patch its residual stream to understand what it learns and how. A parallel line of work evaluates text representations of cube state for pre-trained LLM reasoning.
 
+**Website:** [cole-mcguire.github.io/cube-interpretability](https://cole-mcguire.github.io/cube-interpretability)
+
 **Progress report:** [`docs/progress_report.pdf`](docs/progress_report.pdf) (source: [`docs/progress_report.tex`](docs/progress_report.tex)).
 
 ## What this project does
@@ -62,8 +64,10 @@ cube-interpretability/
 │   │                       Probes next-move model for optimal distance vs distance model
 │   ├── superposition.py    Phase 11 — SAE expansion sweep
 │   │                       R², active features, dead fraction vs expansion ratio
-│   └── corner_analysis.py  Phase 12 — corner-tokenized model analysis
-│                           Accuracy vs flat model, 8×8 attention heatmaps, entropy by distance
+│   ├── corner_analysis.py  Phase 12 — corner-tokenized model analysis
+│   │                       Accuracy vs flat model, 8×8 attention heatmaps, entropy by distance
+│   └── corner_attn.py      Phase 13 — attention head ablation and specialization
+│                           Accuracy drop per head, mean 8×8 patterns, U/D layer bias, distance modulation
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -90,6 +94,7 @@ cube-interpretability/
 │   ├── next_move_results.html Phase 10 — Next-move variant comparison
 │   ├── superposition_results.html Phase 11 — SAE expansion sweep results
 │   ├── corner_results.html Phase 12 — corner-tokenized model results
+│   ├── corner_attn_results.html Phase 13 — head ablation and specialization
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -191,6 +196,9 @@ uv run python -m interp.superposition
 # Phase 12: corner-tokenized transformer (train + analyze)
 uv run python train.py --arch corner --out checkpoints/corner
 uv run python -m interp.corner_analysis
+
+# Phase 13: attention head ablation and specialization
+uv run python -m interp.corner_attn
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
@@ -326,6 +334,11 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 - Corner model achieves **76.2%** val accuracy vs flat model's **79.8%** — a small gap given the structural advantage of per-cubie tokenization; more training or a larger model would likely close it
 - Attention entropy is very low (L0–L3: 0.28–0.37 nats) vs uniform ceiling of 2.08 nats, indicating heads attend sharply to specific corner pairs rather than diffusely; the model learns concentrated inter-cubie routing
 - Distance-stratified 8×8 attention heatmaps reveal which corner pairs the heads track at each solve distance
+
+**Phase 13 — Attention head ablation and specialization:**
+- Layer 0 dominates: ablating L0H1 drops accuracy by **44.9 pp** (76.2% → 31.3%), L0H0 by **30.7 pp**, L0H2 by **25.1 pp**; all L1–L3 heads are individually small (≤7.7 pp drop)
+- The three critical L0 heads are also the sharpest: sharpness scores 0.760, 0.495, 0.701 (mean max attention weight) vs. the relatively diffuse L0H3 (0.570) and near-uniform L1–L3 heads
+- Specialization analysis (U-layer: UFR,UFL,UBL,UBR vs D-layer: DFR,DFL,DBL,DBR) reveals which heads exhibit within-layer vs cross-layer routing preferences, surfacing geometric structure in the inter-cubie attention circuit
 
 ## References
 
