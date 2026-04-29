@@ -62,6 +62,9 @@ cube-interpretability/
 │                           (face_grid, compact_string, corner_cubies,
 │                           piece_identity, move_sequence) + CoT variant
 │
+├── test_representations.py Phase 6 — automated API evaluation of all 5 representations
+│                           across multiple LLMs (OpenAI, Gemini, Anthropic, Groq)
+│
 ├── walkthrough.ipynb       Executed notebook: all phases with inline plots
 │
 ├── docs/                   GitHub Pages dashboard + write-up (https://cole-mcguire.github.io/cube-interpretability/)
@@ -252,7 +255,7 @@ An initial pilot (GPT-5 via chat, 1 case per distance, no code prohibition — t
 | `move_sequence` — the scramble itself (degenerate baseline) | ✓ | ✓ | ✓ |
 | `piece_identity` + chain-of-thought | ✓ | ✗ | ✗ |
 
-A subsequent automated evaluation (API, 10 cases per distance, d=3–11, code explicitly prohibited) found that **all state-based representations score 0% across every model and every distance**. Only `move_sequence` (trivial inversion) varies:
+A subsequent automated evaluation (API, 10 cases per distance, d=3–11, code explicitly prohibited) tested all five representations including `piece_identity` and found that **all state-based representations score 0% across every model and every distance**. Only `move_sequence` (trivial inversion) varies:
 
 | Model | d=3 | d=5 | d=7 | d=9 | d=11 | Total |
 |---|---|---|---|---|---|---|

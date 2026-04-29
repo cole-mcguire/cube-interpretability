@@ -8,7 +8,8 @@ Representations tested:
   1. face_grid       — 2x2 grid per face, compass layout
   2. compact_string  — 24-char flat string, faces in U/D/F/B/L/R order
   3. corner_cubies   — per-corner piece description (which color faces each direction)
-  4. move_sequence   — the scramble sequence itself (degenerate ceiling)
+  4. piece_identity  — per-piece name, current position, and W/Y face orientation
+  5. move_sequence   — the scramble sequence itself (degenerate ceiling)
 
 Supported providers (set the corresponding env var to activate):
   OPENAI_API_KEY    — gpt-*, o1-*, o3-*, o4-*
@@ -47,7 +48,7 @@ N_PER_DISTANCE = 10   # test cases per distance level (50 total × 4 reps × n_m
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cube import (
     Cube, DistanceTable, MOVE_NAMES, MOVE_NAME_TO_IDX, CORNER_STICKERS,
-    IDX_TO_COLOR, solve,
+    IDX_TO_COLOR, SOLVED_STATE, solve,
 )
 
 CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "distances.npz")
@@ -168,6 +169,79 @@ def fmt_move_sequence(scramble_moves: list[int]) -> str:
         "",
         f"  {move_str}",
     ])
+
+
+POS_NAMES = ["UFR", "UFL", "UBL", "UBR", "DFR", "DFL", "DBL", "DBR"]
+CORNER_FACE_DIRS = [
+    ("U", "F", "R"), ("U", "F", "L"), ("U", "B", "L"), ("U", "B", "R"),
+    ("D", "F", "R"), ("D", "F", "L"), ("D", "B", "L"), ("D", "B", "R"),
+]
+UD_COLORS = {"W", "Y"}
+
+_SOLVED_PIECES = []
+for _i, (_si0, _si1, _si2) in enumerate(CORNER_STICKERS):
+    _c0 = IDX_TO_COLOR[int(SOLVED_STATE[_si0])]
+    _c1 = IDX_TO_COLOR[int(SOLVED_STATE[_si1])]
+    _c2 = IDX_TO_COLOR[int(SOLVED_STATE[_si2])]
+    _SOLVED_PIECES.append((
+        f"{_c0}-{_c1}-{_c2}",
+        next(c for c in [_c0, _c1, _c2] if c in UD_COLORS),
+        frozenset([_c0, _c1, _c2]),
+    ))
+
+
+def fmt_piece_identity(cube: Cube) -> str:
+    s = cube.state
+    current = []
+    for si0, si1, si2 in CORNER_STICKERS:
+        c0 = IDX_TO_COLOR[int(s[si0])]
+        c1 = IDX_TO_COLOR[int(s[si1])]
+        c2 = IDX_TO_COLOR[int(s[si2])]
+        current.append((frozenset([c0, c1, c2]), c0, c1, c2))
+
+    color_to_pos = {colors: i for i, (colors, _, _, _) in enumerate(current)}
+
+    lines = [
+        "Standard orientation: White on top (U), Green in front (F)",
+        "8 corner pieces, each named [W/Y]-[F/B-color]-[L/R-color] as in the solved state.",
+        "Goal: every piece at its home position with its W or Y sticker facing U or D.",
+        "",
+        "Solved reference:",
+        "  W-G-R@UFR  W-G-O@UFL  W-B-O@UBL  W-B-R@UBR",
+        "  Y-G-R@DFR  Y-G-O@DFL  Y-B-O@DBL  Y-B-R@DBR",
+        "",
+        "Current state (piece → current position, which face its W/Y sticker faces):",
+    ]
+
+    for home_idx, (piece_name, ud_color, piece_colors) in enumerate(_SOLVED_PIECES):
+        home_pos = POS_NAMES[home_idx]
+        cur_idx  = color_to_pos[piece_colors]
+        cur_pos  = POS_NAMES[cur_idx]
+        dirs     = CORNER_FACE_DIRS[cur_idx]
+        _, c0, c1, c2 = current[cur_idx]
+
+        if c0 == ud_color:
+            ud_face = dirs[0]
+        elif c1 == ud_color:
+            ud_face = dirs[1]
+        else:
+            ud_face = dirs[2]
+
+        at_home    = (cur_idx == home_idx)
+        ud_correct = ud_face in ("U", "D")
+
+        if at_home and ud_correct:
+            desc = "solved"
+        elif at_home:
+            desc = f"home ({home_pos}), but {ud_color} faces {ud_face} — needs a twist"
+        elif ud_correct:
+            desc = f"at {cur_pos}, {ud_color} faces {ud_face} — needs to move home ({home_pos})"
+        else:
+            desc = f"at {cur_pos}, {ud_color} faces {ud_face} — needs to move to {home_pos} + twist"
+
+        lines.append(f"  {piece_name}: {desc}")
+
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
@@ -428,10 +502,11 @@ def run():
     print(f"  {len(cases)} cases ready\n")
 
     rep_configs = [
-        ("face_grid",      fmt_face_grid,      False),
-        ("compact_string", fmt_compact_string, False),
-        ("corner_cubies",  fmt_corner_cubies,  False),
-        ("move_sequence",  fmt_move_sequence,  True),
+        ("face_grid",       fmt_face_grid,       False),
+        ("compact_string",  fmt_compact_string,  False),
+        ("corner_cubies",   fmt_corner_cubies,   False),
+        ("piece_identity",  fmt_piece_identity,  False),
+        ("move_sequence",   fmt_move_sequence,   True),
     ]
 
     all_results: dict[str, dict] = {}
