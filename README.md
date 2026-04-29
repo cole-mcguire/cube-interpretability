@@ -60,8 +60,10 @@ cube-interpretability/
 │   │                       Per-distance accuracy, layer probe MAE, DLA over epochs
 │   ├── next_move.py        Phase 10 — next-move prediction variant
 │   │                       Probes next-move model for optimal distance vs distance model
-│   └── superposition.py    Phase 11 — SAE expansion sweep
-│                           R², active features, dead fraction vs expansion ratio
+│   ├── superposition.py    Phase 11 — SAE expansion sweep
+│   │                       R², active features, dead fraction vs expansion ratio
+│   └── corner_analysis.py  Phase 12 — corner-tokenized model analysis
+│                           Accuracy vs flat model, 8×8 attention heatmaps, entropy by distance
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -87,6 +89,7 @@ cube-interpretability/
 │   ├── grokking_results.html Phase 9 — Training dynamics results (generated after retraining)
 │   ├── next_move_results.html Phase 10 — Next-move variant comparison
 │   ├── superposition_results.html Phase 11 — SAE expansion sweep results
+│   ├── corner_results.html Phase 12 — corner-tokenized model results
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -184,6 +187,10 @@ uv run python -m interp.next_move
 
 # Phase 11: superposition analysis (SAE expansion sweep)
 uv run python -m interp.superposition
+
+# Phase 12: corner-tokenized transformer (train + analyze)
+uv run python train.py --arch corner --out checkpoints/corner
+uv run python -m interp.corner_analysis
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
@@ -313,6 +320,11 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 - L1, L2, L3 show **zero dead features** at every expansion ratio through 8×; L2 and L3 have zero dead even at 16× (2048 features in 128-dim space), meaning every dictionary element gets used and active count scales linearly with expansion
 - There is **no plateau** in active feature count — no identifiable cutoff that would indicate a finite set of "true features" in superposition
 - Conclusion: this model does not exhibit classical superposition. Small size (~200k params, 12 classes) and dense residual streams mean features are not packed above dimensionality; the representations are already near-orthogonal rather than superimposed
+
+**Phase 12 — Corner-tokenized transformer:**
+- Replaces the single 144-dim cube token with 8 per-corner tokens (18-dim each: 3 stickers × 6-color one-hot), making multi-head attention non-degenerate for the first time
+- Attention heads now operate over 8 meaningful tokens (UFR, UFL, UBL, UBR, DFR, DFL, DBL, DBR), enabling geometric inter-cubie reasoning
+- Analysis: val accuracy vs flat model, mean 8×8 attention heatmaps per distance class, and attention entropy vs optimal distance reveal what inter-cubie structure the heads learn
 
 ## References
 

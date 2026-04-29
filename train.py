@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
 
 from dataset import load_split
-from model import CubeTransformer
+from model import CubeTransformer, CubeTransformerCorner, states_to_corners
 
 # ---------------------------------------------------------------------------
 # Defaults
@@ -57,9 +57,13 @@ def get_device() -> torch.device:
     return torch.device("cpu")
 
 
-def make_loader(data: dict, label_key: str, batch_size: int, shuffle: bool) -> DataLoader:
+def make_loader(data: dict, label_key: str, batch_size: int, shuffle: bool,
+                arch: str = "flat") -> DataLoader:
+    states = data["states"]
+    if arch == "corner":
+        states = states_to_corners(states)   # (N, 8, 18)
     dataset = TensorDataset(
-        torch.from_numpy(data["states"]),
+        torch.from_numpy(states),
         torch.from_numpy(data[label_key]).long(),
         torch.from_numpy(data["optimal_distance"].astype("int64")),
     )
@@ -140,17 +144,23 @@ def train(args: argparse.Namespace) -> None:
     n_classes  = task_cfg["n_classes"]
 
     print("Loading dataset...", end=" ", flush=True)
-    train_loader = make_loader(load_split(data_dir / "train.npz"), label_key, args.batch_size, shuffle=True)
-    val_loader   = make_loader(load_split(data_dir / "val.npz"),   label_key, args.batch_size, shuffle=False)
+    train_loader = make_loader(load_split(data_dir / "train.npz"), label_key, args.batch_size, shuffle=True,  arch=args.arch)
+    val_loader   = make_loader(load_split(data_dir / "val.npz"),   label_key, args.batch_size, shuffle=False, arch=args.arch)
     print(f"train={len(train_loader.dataset):,}  val={len(val_loader.dataset):,}")
 
-    model = CubeTransformer(
-        d_model=args.d_model, n_layers=args.n_layers, n_heads=args.n_heads,
-        n_classes=n_classes,
-    ).to(device)
+    if args.arch == "corner":
+        model = CubeTransformerCorner(
+            d_model=args.d_model, n_layers=args.n_layers, n_heads=args.n_heads,
+            n_classes=n_classes,
+        ).to(device)
+    else:
+        model = CubeTransformer(
+            d_model=args.d_model, n_layers=args.n_layers, n_heads=args.n_heads,
+            n_classes=n_classes,
+        ).to(device)
 
-    print(f"\nTask: {args.task}  ({n_classes} classes)")
-    print(f"CubeTransformer — {args.n_layers}L  {args.n_heads}H  d_model={args.d_model}")
+    print(f"\nTask: {args.task}  ({n_classes} classes)  arch: {args.arch}")
+    print(f"CubeTransformer{'+Corner' if args.arch == 'corner' else ''} — {args.n_layers}L  {args.n_heads}H  d_model={args.d_model}")
     print(f"Parameters: {model.n_params:,}  ({model.n_params * 4 / 1e6:.2f} MB)")
     print(f"Random baseline accuracy: {100/n_classes:.1f}%\n")
 
@@ -244,6 +254,8 @@ def main() -> None:
     p.add_argument("--wd",         type=float, default=DEFAULT_WD)
     p.add_argument("--save-every", type=int,   default=0, dest="save_every",
                    help="save epoch_NNN.pt every N epochs (0 = off, 1 = every epoch)")
+    p.add_argument("--arch",       default="flat", choices=["flat", "corner"],
+                   help="flat: single 144-dim token; corner: 8 per-cubie tokens (18-dim each)")
     train(p.parse_args())
 
 
