@@ -17,6 +17,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 9. **Text representations** — evaluates five ways to describe cube state in natural language and tests whether a pre-trained LLM can solve scrambles from each
 10. **Circuit identification** — DLA, activation patching, and neuron DLA identify which components carry the distance signal and which individual neurons are most distance-tuned
 11. **Weight-level analysis** — SVD of the embedding matrix, direct read-out path accuracy, and per-neuron input/output profiles close the loop on the circuit
+12. **Training dynamics** — re-trains with per-epoch checkpoints, then tracks per-distance accuracy, layer-wise probe MAE, and component DLA over time to reveal phase transitions
 
 ## File map
 
@@ -51,8 +52,10 @@ cube-interpretability/
 │   │                       Dead-feature resampling, Pearson alignment analysis
 │   ├── circuit.py          Phase 7 — circuit identification
 │   │                       DLA, activation patching, neuron DLA
-│   └── weights.py          Phase 8 — weight-level analysis
-│                           Embedding SVD, direct read-out path, top neuron profiles
+│   ├── weights.py          Phase 8 — weight-level analysis
+│   │                       Embedding SVD, direct read-out path, top neuron profiles
+│   └── grokking.py         Phase 9 — training dynamics / grokking
+│                           Per-distance accuracy, layer probe MAE, DLA over epochs
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -72,6 +75,7 @@ cube-interpretability/
 │   ├── sae_results.html    Phase 5c — SAE results
 │   ├── circuit_results.html  Phase 7 — Circuit identification results
 │   ├── weights_results.html  Phase 8 — Weight-level analysis results
+│   ├── grokking_results.html Phase 9 — Training dynamics results (generated after retraining)
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -158,6 +162,10 @@ uv run python -m interp.circuit
 
 # Phase 8: weight-level analysis (embedding SVD, direct read-out, neuron profiles)
 uv run python -m interp.weights
+
+# Phase 9: training dynamics / grokking (requires re-training with --save-every 1)
+uv run cube-train --save-every 1
+uv run python -m interp.grokking
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.

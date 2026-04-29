@@ -330,6 +330,7 @@ NAV_BODY = """\
     <a href="sae_results.html">Phase 5c — SAE</a>
     <a href="circuit_results.html">Phase 7 — Circuit</a>
     <a href="weights_results.html" aria-current="page">Phase 8 — Weights</a>
+    <a href="grokking_results.html">Phase 9 — Grokking</a>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
 </header>"""

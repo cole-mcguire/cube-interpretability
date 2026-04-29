@@ -168,7 +168,8 @@ def train(args: argparse.Namespace) -> None:
 
     best_val_acc = 0.0
     history: list[dict] = []
-    out_path = Path(args.out) / "best.pt"
+    out_path  = Path(args.out) / "best.pt"
+    out_dir   = Path(args.out)
 
     header = f"{'Epoch':>6}  {'train':>8}  {'val':>8}  {'acc':>7}  {'lr':>10}  {'time':>6}"
     print(header)
@@ -203,11 +204,18 @@ def train(args: argparse.Namespace) -> None:
         history.append({
             "epoch": epoch, "train_loss": train_loss,
             "val_loss": val_loss, "val_acc": val_acc,
+            "depth_acc": depth_acc,
         })
 
         if improved:
             best_val_acc = val_acc
             save_checkpoint(model, epoch, val_loss, val_acc, history, out_path)
+
+        if args.save_every > 0 and epoch % args.save_every == 0:
+            save_checkpoint(
+                model, epoch, val_loss, val_acc, history,
+                out_dir / f"epoch_{epoch:03d}.pt",
+            )
 
     print(f"\nBest val acc: {best_val_acc*100:.1f}%  →  {out_path}")
 
@@ -234,6 +242,8 @@ def main() -> None:
     p.add_argument("--epochs",     type=int,   default=DEFAULT_EPOCHS)
     p.add_argument("--lr",         type=float, default=DEFAULT_LR)
     p.add_argument("--wd",         type=float, default=DEFAULT_WD)
+    p.add_argument("--save-every", type=int,   default=0, dest="save_every",
+                   help="save epoch_NNN.pt every N epochs (0 = off, 1 = every epoch)")
     train(p.parse_args())
 
 
