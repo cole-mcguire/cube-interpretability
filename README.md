@@ -300,6 +300,20 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 - The distance-supervised model, by contrast, reaches MAE 0.40 at L3 from the same 0.98 embedding start — nearly 2× better
 - Conclusion: the embedding layer independently captures substantial distance structure (both models start at MAE 0.98), but the transformer blocks only build on this when directly supervised; distance representation does not emerge as a byproduct of next-move training
 
+**Phase 11 — Superposition analysis (SAE expansion sweep 1×–16×):**
+
+| Expansion | embed R² | L0 R² | L1 R² | L2 R² | L3 R² |
+|---|---|---|---|---|---|
+| 1× (128) | 0.9994 | 0.9917 | 0.9961 | 0.9978 | 0.9982 |
+| 4× (512) | 0.9996 | 0.9804 | 0.9988 | 0.9996 | 0.9990 |
+| 16× (2048) | 0.9993 | 0.9311 | 0.9973 | 0.9927 | 0.9927 |
+
+- R² is >0.999 at **1× expansion** for embed/L1–L3 — residual streams are low-dimensional enough that a same-size dictionary nearly perfectly reconstructs them; there is no reconstruction gap for larger dictionaries to fill
+- L0 is anomalous: R² *degrades* above 4× due to training instability (L1 loss diverges at 16×), reflecting L0's much denser activation distribution as the dominant MLP layer
+- L1, L2, L3 show **zero dead features** at every expansion ratio through 8×; L2 and L3 have zero dead even at 16× (2048 features in 128-dim space), meaning every dictionary element gets used and active count scales linearly with expansion
+- There is **no plateau** in active feature count — no identifiable cutoff that would indicate a finite set of "true features" in superposition
+- Conclusion: this model does not exhibit classical superposition. Small size (~200k params, 12 classes) and dense residual streams mean features are not packed above dimensionality; the representations are already near-orthogonal rather than superimposed
+
 ## References
 
 - Alain & Bengio (2016) — [Understanding intermediate layers using linear classifier probes](https://arxiv.org/abs/1610.01644)
