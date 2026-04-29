@@ -329,6 +329,7 @@ NAV_BODY = """\
     <a href="circuit_results.html">Phase 7 — Circuit</a>
     <a href="weights_results.html" aria-current="page">Phase 8 — Weights</a>
     <a href="grokking_results.html">Phase 9 — Grokking</a>
+    <a href="next_move_results.html">Phase 10 — Next Move</a>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
 </header>"""

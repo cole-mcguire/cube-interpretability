@@ -18,6 +18,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 10. **Circuit identification** — DLA, activation patching, and neuron DLA identify which components carry the distance signal and which individual neurons are most distance-tuned
 11. **Weight-level analysis** — SVD of the embedding matrix, direct read-out path accuracy, and per-neuron input/output profiles close the loop on the circuit
 12. **Training dynamics** — re-trains with per-epoch checkpoints, then tracks per-distance accuracy, layer-wise probe MAE, and component DLA over time to reveal phase transitions
+13. **Next-move prediction variant** — re-trains on next-move prediction (18 classes) and probes for optimal distance, testing whether distance representation emerges under a different supervision signal
 
 ## File map
 
@@ -54,8 +55,10 @@ cube-interpretability/
 │   │                       DLA, activation patching, neuron DLA
 │   ├── weights.py          Phase 8 — weight-level analysis
 │   │                       Embedding SVD, direct read-out path, top neuron profiles
-│   └── grokking.py         Phase 9 — training dynamics / grokking
-│                           Per-distance accuracy, layer probe MAE, DLA over epochs
+│   ├── grokking.py         Phase 9 — training dynamics / grokking
+│   │                       Per-distance accuracy, layer probe MAE, DLA over epochs
+│   └── next_move.py        Phase 10 — next-move prediction variant
+│                           Probes next-move model for optimal distance vs distance model
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
 │                           states for manual LLM testing; outputs 5 formats
@@ -79,6 +82,7 @@ cube-interpretability/
 │   ├── circuit_results.html  Phase 7 — Circuit identification results
 │   ├── weights_results.html  Phase 8 — Weight-level analysis results
 │   ├── grokking_results.html Phase 9 — Training dynamics results (generated after retraining)
+│   ├── next_move_results.html Phase 10 — Next-move variant comparison
 │   ├── progress_report.tex Full progress report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (11 pages)
 │   ├── references.bib      Bibliography
@@ -169,6 +173,10 @@ uv run python -m interp.weights
 # Phase 9: training dynamics / grokking (requires re-training with --save-every 1)
 uv run cube-train --save-every 1
 uv run python -m interp.grokking
+
+# Phase 10: next-move prediction variant
+uv run python train.py --task next_move --out checkpoints/next_move
+uv run python -m interp.next_move
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
