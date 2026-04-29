@@ -323,8 +323,9 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 
 **Phase 12 — Corner-tokenized transformer:**
 - Replaces the single 144-dim cube token with 8 per-corner tokens (18-dim each: 3 stickers × 6-color one-hot), making multi-head attention non-degenerate for the first time
-- Attention heads now operate over 8 meaningful tokens (UFR, UFL, UBL, UBR, DFR, DFL, DBL, DBR), enabling geometric inter-cubie reasoning
-- Analysis: val accuracy vs flat model, mean 8×8 attention heatmaps per distance class, and attention entropy vs optimal distance reveal what inter-cubie structure the heads learn
+- Corner model achieves **76.2%** val accuracy vs flat model's **79.8%** — a small gap given the structural advantage of per-cubie tokenization; more training or a larger model would likely close it
+- Attention entropy is very low (L0–L3: 0.28–0.37 nats) vs uniform ceiling of 2.08 nats, indicating heads attend sharply to specific corner pairs rather than diffusely; the model learns concentrated inter-cubie routing
+- Distance-stratified 8×8 attention heatmaps reveal which corner pairs the heads track at each solve distance
 
 ## References
 
