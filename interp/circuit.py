@@ -489,10 +489,7 @@ NAV_BODY = """\
   <nav>
     <a href="index.html">Visualizer</a>
     <a href="probe_results.html">Phase 4 — Probing</a>
-    <a href="patch_results.html">Phase 5a — Patching</a>
-    <a href="patch_cf_results.html">Phase 5a — Counterfactual</a>
-    <a href="tuned_lens_results.html">Phase 5b — Tuned Lens</a>
-    <a href="sae_results.html">Phase 5c — SAE</a>
+    <a href="phase5_results.html">Phase 5 — Patching &amp; Lenses</a>
     <a href="circuit_results.html" aria-current="page">Phase 7 — Circuit</a>
     <a href="progress_report.pdf">Progress Report ↗</a>
   </nav>
