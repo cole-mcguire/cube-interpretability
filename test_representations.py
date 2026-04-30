@@ -36,9 +36,15 @@ import numpy as np
 
 MODELS = [
     "claude-sonnet-4-6",
+    "claude-opus-4-7",
+    "gpt-4o",
+    "gemini-2.5-pro",
+    "llama-3.3-70b-versatile",
 ]
 
 N_PER_DISTANCE = 10  # test cases per distance level (50 total × 5 reps × n_models queries)
+
+RESULTS_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "llm_eval_cache.json")
 
 # Seconds to sleep between queries — Groq has stricter rate limits than the other providers
 PROVIDER_SLEEP = {
@@ -538,17 +544,81 @@ def run_model(
     return model, results
 
 
-def run():
+def load_cache() -> dict:
+    if os.path.exists(RESULTS_CACHE):
+        import json
+        with open(RESULTS_CACHE, encoding="utf-8") as f:
+            raw = json.load(f)
+        # raw[model][rep_name] = list of [opt_d, solved, sol_len]
+        return {
+            model: {
+                rep: [tuple(r) for r in rows]
+                for rep, rows in reps.items()
+            }
+            for model, reps in raw.items()
+        }
+    return {}
+
+
+def save_cache(cache: dict) -> None:
+    import json
+    os.makedirs(os.path.dirname(RESULTS_CACHE), exist_ok=True)
+    with open(RESULTS_CACHE, "w", encoding="utf-8") as f:
+        json.dump(cache, f)
+
+
+def run(argv=None):
+    import argparse as _ap
+    parser = _ap.ArgumentParser(description="LLM cube-solving evaluation.")
+    parser.add_argument(
+        "--models", default=None,
+        help="Comma-separated list of models to run (default: all with available API keys).",
+    )
+    parser.add_argument(
+        "--regen-html", action="store_true",
+        help="Regenerate the HTML from cached results without running any new queries.",
+    )
+    args = parser.parse_args(argv)
+
+    model_list = [m.strip() for m in args.models.split(",")] if args.models else MODELS
+
+    # Load previously saved results
+    cache = load_cache()
+
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "llm_eval_results.html")
+    rep_configs = [
+        ("face_grid",       fmt_face_grid,       False),
+        ("compact_string",  fmt_compact_string,  False),
+        ("corner_cubies",   fmt_corner_cubies,   False),
+        ("piece_identity",  fmt_piece_identity,  False),
+        ("move_sequence",   fmt_move_sequence,   True),
+    ]
+    target_distances = [3, 5, 7, 9, 11]
+
+    if args.regen_html:
+        if not cache:
+            print("No cached results found. Run without --regen-html first.")
+            return
+        all_models = list(cache.keys())
+        write_html_results(cache, all_models, target_distances, rep_configs, out_path)
+        print(f"Wrote {out_path}")
+        return
+
     print("Loading BFS distance table...")
     distances = DistanceTable.load(CACHE_PATH)
     print(f"  {len(distances):,} states loaded\n")
 
-    clients = build_clients(MODELS)
-    active_models = [m for m in MODELS if provider_for(m) in clients]
+    clients = build_clients(model_list)
+    active_models = [m for m in model_list if provider_for(m) in clients]
     if not active_models:
         print("No API keys found for any configured model. Set at least one of:")
         for v in KEY_VARS.values():
             print(f"  {v}")
+        if cache:
+            print("\nExisting cached results for:", ", ".join(cache.keys()))
+            all_models = list(cache.keys())
+            write_html_results(cache, all_models, target_distances, rep_configs, out_path)
+            print(f"Wrote {out_path} from cache")
         return
     print(f"Active models: {', '.join(active_models)}\n")
 
@@ -562,20 +632,11 @@ def run():
     print(f"  Scramble : {' '.join(MOVE_NAMES[m] for m in ex_scramble)}")
     print(f"  Solution : {ex_sol_str}\n")
 
-    target_distances = [3, 5, 7, 9, 11]
     print(f"Generating test cases ({N_PER_DISTANCE} per distance level)...")
     cases = generate_test_cases(distances, N_PER_DISTANCE, target_distances)
     print(f"  {len(cases)} cases ready\n")
 
-    rep_configs = [
-        ("face_grid",       fmt_face_grid,       False),
-        ("compact_string",  fmt_compact_string,  False),
-        ("corner_cubies",   fmt_corner_cubies,   False),
-        ("piece_identity",  fmt_piece_identity,  False),
-        ("move_sequence",   fmt_move_sequence,   True),
-    ]
-
-    all_results: dict[str, dict] = {}
+    new_results: dict[str, dict] = {}
 
     print(f"Running {len(active_models)} model(s) in parallel...\n")
     with ThreadPoolExecutor(max_workers=len(active_models)) as pool:
@@ -595,15 +656,20 @@ def run():
         }
         for future in as_completed(futures):
             model, results = future.result()
-            all_results[model] = results
+            new_results[model] = results
             print_summary(model, results, target_distances, rep_configs)
 
     if len(active_models) > 1:
-        print_comparison(all_results, active_models, target_distances, rep_configs)
+        print_comparison(new_results, active_models, target_distances, rep_configs)
 
-    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "llm_eval_results.html")
-    write_html_results(all_results, active_models, target_distances, rep_configs, out_path)
-    print(f"\nWrote {out_path}")
+    # Merge new results into cache and save
+    cache.update(new_results)
+    save_cache(cache)
+    print(f"Saved results to {RESULTS_CACHE}")
+
+    all_models = list(cache.keys())
+    write_html_results(cache, all_models, target_distances, rep_configs, out_path)
+    print(f"Wrote {out_path}")
 
 
 def write_html_results(
@@ -614,26 +680,22 @@ def write_html_results(
     out_path: str,
 ) -> None:
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     _DARK = dict(plot_bgcolor="#0f172a", paper_bgcolor="#1e293b", font=dict(color="#e2e8f0"))
     _GRID = dict(gridcolor="#334155")
+    COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899"]
 
     rep_names = [name for name, _, _ in rep_configs]
-    figs_html = []
 
-    for model in active_models:
-        results = all_results[model]
-
-        # Build solve-rate matrix: rows=reps, cols=distances
-        z = []
-        text = []
+    def solve_rates(results):
+        """Return (totals[], heatmap_z[], heatmap_text[]) for one model's results."""
+        z, text, totals, total_texts = [], [], [], []
         for rep_name in rep_names:
-            row_z, row_t = [], []
             res = results[rep_name]
-            by_dist: dict[int, list[bool]] = {}
+            by_dist: dict[int, list] = {}
             for d, solved, _ in res:
                 by_dist.setdefault(d, []).append(solved)
+            row_z, row_t = [], []
             for d in target_distances:
                 if d in by_dist:
                     k, n = sum(by_dist[d]), len(by_dist[d])
@@ -644,56 +706,108 @@ def write_html_results(
                     row_t.append("-")
             z.append(row_z)
             text.append(row_t)
+            n_solved = sum(s for _, s, _ in res)
+            totals.append(100.0 * n_solved / len(res))
+            total_texts.append(f"{n_solved}/{len(res)}")
+        return totals, total_texts, z, text
+
+    plotly_loaded = False
+    sections = []   # list of (model, html_string)
+
+    # Cross-model comparison bar chart (only if >1 model)
+    if len(active_models) > 1:
+        fig_cmp = go.Figure()
+        for ci, model in enumerate(active_models):
+            totals, total_texts, _, _ = solve_rates(all_results[model])
+            fig_cmp.add_trace(go.Bar(
+                name=model,
+                x=rep_names, y=totals,
+                text=total_texts, textposition="outside",
+                marker_color=COLORS[ci % len(COLORS)],
+                hovertemplate=f"{model}<br>%{{x}}: %{{text}} (%{{y:.1f}}%)<extra></extra>",
+            ))
+        fig_cmp.update_layout(
+            title="Cross-model comparison — total solve rate by representation",
+            xaxis=dict(title="Representation", **_GRID),
+            yaxis=dict(title="Solve rate (%)", range=[0, 115], **_GRID),
+            barmode="group", height=420, **_DARK,
+        )
+        cmp_html = fig_cmp.to_html(full_html=False, include_plotlyjs="cdn")
+        plotly_loaded = True
+        sections.append(("__comparison__", cmp_html))
+
+    # Per-model sections
+    for model in active_models:
+        results = all_results[model]
+        totals, total_texts, z, text = solve_rates(results)
 
         fig_heat = go.Figure(go.Heatmap(
             z=z,
             x=[f"d={d}" for d in target_distances],
             y=rep_names,
-            colorscale="Blues",
-            zmin=0, zmax=100,
-            text=text,
-            texttemplate="%{text}",
+            colorscale="Blues", zmin=0, zmax=100,
+            text=text, texttemplate="%{text}",
             colorbar=dict(title="Solve %"),
             hovertemplate="Rep: %{y}<br>Distance: %{x}<br>Solve rate: %{z:.1f}%<extra></extra>",
         ))
         fig_heat.update_layout(
-            title=f"{model} — Solve rate (%) by representation and distance",
-            xaxis_title="Optimal distance",
-            yaxis_title="Representation",
-            height=380,
-            **_DARK,
+            title=f"{model} — Solve rate (%) by representation × distance",
+            xaxis_title="Optimal distance", yaxis_title="Representation",
+            height=360, **_DARK,
         )
 
-        # Bar chart: total solve rate per representation
-        totals = []
-        total_texts = []
-        for rep_name in rep_names:
-            res = results[rep_name]
-            n_solved = sum(s for _, s, _ in res)
-            totals.append(100.0 * n_solved / len(res))
-            total_texts.append(f"{n_solved}/{len(res)}")
-
         fig_bar = go.Figure(go.Bar(
-            x=rep_names,
-            y=totals,
-            text=total_texts,
-            textposition="outside",
+            x=rep_names, y=totals,
+            text=total_texts, textposition="outside",
             marker_color="#3b82f6",
             hovertemplate="%{x}<br>%{text} solved (%{y:.1f}%)<extra></extra>",
         ))
         fig_bar.update_layout(
             title=f"{model} — Total solve rate by representation",
-            xaxis_title="Representation",
-            yaxis_title="Solve rate (%)",
-            yaxis=dict(range=[0, 110], **_GRID),
-            xaxis=dict(**_GRID),
-            height=380,
-            **_DARK,
+            xaxis=dict(title="Representation", **_GRID),
+            yaxis=dict(title="Solve rate (%)", range=[0, 115], **_GRID),
+            height=360, **_DARK,
         )
 
-        first = not figs_html
-        figs_html.append(fig_heat.to_html(full_html=False, include_plotlyjs="cdn" if first else False))
-        figs_html.append(fig_bar.to_html(full_html=False, include_plotlyjs=False))
+        inc = "cdn" if not plotly_loaded else False
+        plotly_loaded = True
+        model_html = (
+            fig_heat.to_html(full_html=False, include_plotlyjs=inc)
+            + "\n"
+            + fig_bar.to_html(full_html=False, include_plotlyjs=False)
+        )
+        sections.append((model, model_html))
+
+    # Build tab UI
+    model_sections = [(m, h) for m, h in sections if m != "__comparison__"]
+    comparison_html = next((h for m, h in sections if m == "__comparison__"), "")
+
+    tab_ids = [f"tab-{i}" for i in range(len(model_sections))]
+    tab_buttons = "\n".join(
+        f'  <button class="tab-btn{" active" if i==0 else ""}" '
+        f'onclick="showTab({i})" id="btn-{i}">{m}</button>'
+        for i, (m, _) in enumerate(model_sections)
+    )
+    tab_panels = "\n".join(
+        f'<div class="tab-panel" id="{tid}" style="display:{"block" if i==0 else "none"}">{html}</div>'
+        for i, ((m, html), tid) in enumerate(zip(model_sections, tab_ids))
+    )
+
+    tab_css = """\
+.tab-bar { display: flex; gap: 6px; flex-wrap: wrap; padding: 12px 20px 0; }
+.tab-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; font-size: 12px;
+  padding: 5px 14px; border-radius: 5px; cursor: pointer; font-family: inherit;
+  transition: background .15s, color .15s; }
+.tab-btn:hover { background: #334155; color: #e2e8f0; }
+.tab-btn.active { background: #334155; border-color: #475569; color: #f1f5f9; font-weight: 600; }"""
+
+    tab_js = """\
+<script>
+function showTab(i) {
+  document.querySelectorAll('.tab-panel').forEach((p, j) => p.style.display = j===i?'block':'none');
+  document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', j===i));
+}
+</script>"""
 
     nav_css = """\
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -717,7 +831,7 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
 .page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
 .page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
 .page-intro strong { color: #cbd5e1; }
-</style>"""
+""" + tab_css + "\n</style>"
 
     nav_body = """\
 <header>
@@ -752,6 +866,7 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
   <p><strong>Question:</strong> Which text representation of the cube state gives a general-purpose LLM the best chance of solving it?</p>
   <p><strong>Method:</strong> Five representations (face_grid, compact_string, corner_cubies, piece_identity, move_sequence) are tested at distances 3, 5, 7, 9, and 11 with a one-shot prompt. Solve rate and solution length are measured.</p>
   <p><strong>Baseline:</strong> move_sequence gives the model the scramble moves directly — any model that can reverse a sequence achieves a near-100% ceiling. The other representations require genuine spatial reasoning.</p>
+  <p><strong>To add a model:</strong> set its API key env var and run <code style="background:#0f172a;padding:1px 5px;border-radius:3px">uv run python test_representations.py --models MODEL_NAME</code>. Results accumulate across runs.</p>
 </section>"""
 
     html = (
@@ -762,7 +877,10 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
         "</head>\n<body>\n"
         + nav_body + "\n"
         + page_intro + "\n"
-        + "\n".join(figs_html) + "\n"
+        + comparison_html + "\n"
+        + '<div class="tab-bar">\n' + tab_buttons + "\n</div>\n"
+        + tab_panels + "\n"
+        + tab_js + "\n"
         + "</body>\n</html>\n"
     )
 
