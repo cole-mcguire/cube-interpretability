@@ -303,6 +303,8 @@ NAV_BODY = """\
         <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
         <a href="neuron_profile_results.html" aria-current="page">Phase 14 — Neuron Profile</a>
         <a href="corner_circuit_results.html">Phase 15 — Corner Circuit</a>
+        <a href="next_move_analysis_results.html">Phase 16 — Next-Move Analysis</a>
+        <a href="llm_eval_results.html">Phase 17 — LLM Eval</a>
       </div>
     </div>
     <a href="progress_report.pdf">Progress Report &#8599;</a>
