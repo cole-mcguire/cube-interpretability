@@ -533,7 +533,108 @@ function draw3D(state) {
   }
 }
 
+// ── Face-turn animation ───────────────────────────────────────────────────────
+// Sticker indices that move for each of the 18 moves
+const MOVE_STICKERS = ALL_MOVES.map(mv => {
+  const s = [];
+  for (let i = 0; i < 24; i++) if (mv[i] !== i) s.push(i);
+  return s;
+});
+
+// [ax, ay, az, cwSign] for faces U D F B L R
+const FACE_ANIM = [
+  [0,1,0,-1],[0,1,0,1],[0,0,1,-1],[0,0,1,1],[1,0,0,1],[1,0,0,-1]
+];
+
+function rotV(ax, ay, az, a, x, y, z) {
+  const c = Math.cos(a), s = Math.sin(a);
+  if (ay) return [x*c + z*s, y, -x*s + z*c];
+  if (az) return [x*c - y*s, x*s + y*c, z];
+  return [x, y*c - z*s, y*s + z*c];
+}
+
+function draw3DAnim(state, movSet, ax, ay, az, angle) {
+  const S = c3.width, SCALE = S * 0.33;
+  ctx3.fillStyle = '#111827';
+  ctx3.fillRect(0, 0, S, S);
+  const visible = [];
+  for (let si = 0; si < 24; si++) {
+    const q = STICKER_QUADS[si];
+    const mov = movSet.has(si);
+    const [nx, ny, nz] = mov ? rotV(ax, ay, az, angle, q[0], q[1], q[2]) : [q[0], q[1], q[2]];
+    const [,, fz] = rotate3(nx, ny, nz);
+    if (fz <= 0) continue;
+    const pts = []; let depth = 0;
+    for (let ci = 0; ci < 4; ci++) {
+      let vx = q[3+ci*3], vy = q[4+ci*3], vz = q[5+ci*3];
+      if (mov) [vx, vy, vz] = rotV(ax, ay, az, angle, vx, vy, vz);
+      const [rx, ry, rz] = rotate3(vx, vy, vz);
+      pts.push([S/2 + rx*SCALE, S/2 - ry*SCALE]);
+      depth += rz;
+    }
+    visible.push([depth/4, pts, COLOR_HEX[state[si]]]);
+  }
+  visible.sort((a, b) => a[0] - b[0]);
+  for (const [, pts, color] of visible) {
+    ctx3.beginPath();
+    ctx3.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < 4; i++) ctx3.lineTo(pts[i][0], pts[i][1]);
+    ctx3.closePath();
+    ctx3.fillStyle = color;
+    ctx3.fill();
+    ctx3.strokeStyle = '#111827';
+    ctx3.lineWidth = 2.5;
+    ctx3.stroke();
+  }
+}
+
+let animState = null;
+function ease(t) { return t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; }
+
+function startAnim(moveIdx, dur, onDone) {
+  const fi = (moveIdx / 3) | 0;
+  const type = moveIdx % 3;
+  const [ax, ay, az, cw] = FACE_ANIM[fi];
+  const targetAngle = cw * (type === 2 ? Math.PI : type === 0 ? Math.PI/2 : -Math.PI/2);
+  const movSet = new Set(MOVE_STICKERS[moveIdx]);
+  animState = { moveIdx, movSet, ax, ay, az, targetAngle, dur, startTs: null, onDone };
+  requestAnimationFrame(animFrame);
+}
+
+function snapAnim() {
+  if (!animState) return;
+  const { moveIdx, onDone } = animState;
+  animState = null;
+  cubeState = applyMove(cubeState, moveIdx);
+  moveHistory.push(moveIdx);
+  drawNet(cubeState);
+  draw3D(cubeState);
+  updateStatus();
+  if (onDone) onDone();
+}
+
+function animFrame(ts) {
+  if (!animState) return;
+  if (!animState.startTs) animState.startTs = ts;
+  const t = Math.min(1, (ts - animState.startTs) / animState.dur);
+  const angle = animState.targetAngle * ease(t);
+  draw3DAnim(cubeState, animState.movSet, animState.ax, animState.ay, animState.az, angle);
+  if (t < 1) {
+    requestAnimationFrame(animFrame);
+  } else {
+    const { moveIdx, onDone } = animState;
+    animState = null;
+    cubeState = applyMove(cubeState, moveIdx);
+    moveHistory.push(moveIdx);
+    drawNet(cubeState);
+    draw3D(cubeState);
+    updateStatus();
+    if (onDone) onDone();
+  }
+}
+
 c3.addEventListener('mousedown', e => {
+  snapAnim();
   const r = c3.getBoundingClientRect();
   dragStart = {x:e.clientX-r.left, y:e.clientY-r.top, yaw, pitch};
 });
@@ -543,12 +644,13 @@ c3.addEventListener('mousemove', e => {
   yaw   = dragStart.yaw   + (e.clientX - r.left - dragStart.x) * 0.012;
   pitch = Math.max(-Math.PI/2+.05, Math.min(Math.PI/2-.05,
     dragStart.pitch + (e.clientY - r.top - dragStart.y) * 0.012));
-  draw3D(cubeState);
+  if (!animState) draw3D(cubeState);
 });
 c3.addEventListener('mouseup', () => dragStart = null);
 c3.addEventListener('mouseleave', () => dragStart = null);
 c3.addEventListener('touchstart', e => {
   e.preventDefault();
+  snapAnim();
   const t=e.touches[0], r=c3.getBoundingClientRect();
   dragStart={x:t.clientX-r.left,y:t.clientY-r.top,yaw,pitch};
 }, {passive:false});
@@ -559,7 +661,7 @@ c3.addEventListener('touchmove', e => {
   yaw   = dragStart.yaw   + (t.clientX-r.left-dragStart.x)*0.012;
   pitch = Math.max(-Math.PI/2+.05, Math.min(Math.PI/2-.05,
     dragStart.pitch + (t.clientY-r.top-dragStart.y)*0.012));
-  draw3D(cubeState);
+  if (!animState) draw3D(cubeState);
 }, {passive:false});
 c3.addEventListener('touchend', () => dragStart = null);
 
@@ -574,10 +676,8 @@ function redraw() {
 }
 
 function doMove(idx) {
-  cubeState = applyMove(cubeState, idx);
-  moveHistory.push(idx);
   clearSolution();
-  redraw();
+  startAnim(idx, 200, () => updateStatus());
 }
 
 function reset() {
@@ -771,9 +871,9 @@ solveBtn.addEventListener('click', () => {
     try {
       worker = new Worker('solver.worker.js');
       worker.onmessage = e => onSolved(e.data);
-      worker.onerror = err => {
-        solveBtn.disabled = false;
-        setSolveStatus('Worker error: ' + err.message, 'error');
+      worker.onerror = () => {
+        worker = null;
+        onSolved(idaStar(cubeState));
       };
     } catch(ex) {
       // Fallback: run solver on main thread (blocks UI briefly)
@@ -788,15 +888,16 @@ solveBtn.addEventListener('click', () => {
 function doStep() {
   if (!solution || solutionStep >= solution.length) return;
   const m = solution[solutionStep++];
-  cubeState = applyMove(cubeState, m);
-  moveHistory.push(m);
-  redraw();
   updateSolutionDisplay();
-  if (solutionStep >= solution.length) {
-    stepBtn.disabled = true;
-    playBtn.disabled = true;
-    stopPlay();
-  }
+  startAnim(m, 200, () => {
+    drawNet(cubeState);
+    updateStatus();
+    if (solutionStep >= solution.length) {
+      stepBtn.disabled = true;
+      playBtn.disabled = true;
+      stopPlay();
+    }
+  });
 }
 
 stepBtn.addEventListener('click', doStep);
@@ -813,14 +914,24 @@ function scheduleNext() {
   if (!playing || !solution || solutionStep >= solution.length) {
     stopPlay(); return;
   }
-  const delay = Math.max(50, parseInt(document.getElementById('speed-ms').value)||500);
-  playTimer = setTimeout(() => { doStep(); scheduleNext(); }, delay);
+  const speed = Math.max(50, parseInt(document.getElementById('speed-ms').value)||500);
+  const animDur = Math.min(speed * 0.5, 350);
+  const pause = Math.max(0, speed - animDur);
+  const m = solution[solutionStep++];
+  updateSolutionDisplay();
+  startAnim(m, animDur, () => {
+    drawNet(cubeState);
+    updateStatus();
+    if (!playing || solutionStep >= solution.length) { stopPlay(); return; }
+    playTimer = setTimeout(scheduleNext, pause);
+  });
 }
 
 function stopPlay() {
   playing = false;
   playBtn.textContent = '▶ Play';
   if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+  snapAnim();
 }
 
 // ── Initial draw ──────────────────────────────────────────────────────────────
