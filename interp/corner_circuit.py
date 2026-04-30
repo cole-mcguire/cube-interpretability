@@ -422,7 +422,9 @@ def main(args: argparse.Namespace) -> None:
     model.eval()
 
     print("Loading val set...")
-    states, labels = load_split("val")
+    data   = load_split(Path(__file__).resolve().parents[1] / "data" / "val.npz")
+    states = data["states"].astype(np.float32)
+    labels = data["optimal_distance"].astype(int)
     states_corner = states_to_corners(states)
     print(f"  {len(states)} val examples → corner tokens {states_corner.shape}")
 

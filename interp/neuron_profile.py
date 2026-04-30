@@ -352,7 +352,9 @@ def main(args: argparse.Namespace) -> None:
     model.eval()
 
     print("Loading val set...")
-    states, labels = load_split("val")
+    data   = load_split(Path(__file__).resolve().parents[1] / "data" / "val.npz")
+    states = data["states"].astype(np.float32)
+    labels = data["optimal_distance"].astype(int)
     print(f"  {len(states)} val examples")
 
     print("Caching mlp_0 activations...")
