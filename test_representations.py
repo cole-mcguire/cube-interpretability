@@ -22,7 +22,9 @@ Edit MODELS below to choose which models to run.
 
 import os
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.stdout.reconfigure(line_buffering=True)
 
@@ -33,15 +35,18 @@ import numpy as np
 # ---------------------------------------------------------------------------
 
 MODELS = [
-    "gpt-5.4",
-    # "gpt-5.2",
-    # "gpt-4o",
-    # "gemini-2.5-pro",
-    # "claude-opus-4-7",
-    # "llama-3.3-70b-versatile",
+    "claude-sonnet-4-6",
 ]
 
-N_PER_DISTANCE = 10   # test cases per distance level (50 total × 4 reps × n_models queries)
+N_PER_DISTANCE = 10  # test cases per distance level (50 total × 5 reps × n_models queries)
+
+# Seconds to sleep between queries — Groq has stricter rate limits than the other providers
+PROVIDER_SLEEP = {
+    "openai":    4.0,
+    "anthropic": 4.0,
+    "gemini":    4.0,
+    "groq":     10.0,
+}
 
 # ---------------------------------------------------------------------------
 
@@ -397,7 +402,7 @@ def generate_test_cases(distances, n_per_distance, target_distances):
     cases = []
     for target_d in target_distances:
         found = 0
-        for _ in range(50000):
+        for _ in range(200000):
             if found >= n_per_distance:
                 break
             cube = Cube()
@@ -472,6 +477,67 @@ def print_comparison(all_results: dict, active_models: list, target_distances: l
     print("=" * 72)
 
 
+_print_lock = threading.Lock()
+
+
+def _log(model: str, msg: str) -> None:
+    with _print_lock:
+        prefix = f"[{model}] "
+        print("\n".join(prefix + line for line in msg.splitlines()))
+
+
+def run_model(
+    model: str,
+    client,
+    cases: list,
+    rep_configs: list,
+    ex_scramble,
+    ex_cube,
+    ex_sol_str: str,
+    target_distances: list,
+) -> tuple[str, dict]:
+    """Evaluate one model against all cases. Returns (model, results)."""
+    results = {name: [] for name, _, _ in rep_configs}
+
+    _log(model, f"{'─'*60}\nStarting {len(cases)} cases\n{'─'*60}")
+
+    for case_idx, (state, scramble_moves, opt_d) in enumerate(cases):
+        cube = Cube(state.copy())
+        _log(model, f"Case {case_idx+1}/{len(cases)}  d={opt_d}  {cube}")
+
+        for rep_name, formatter, needs_scramble in rep_configs:
+            rep_text = formatter(scramble_moves if needs_scramble else cube)
+            ex_text  = formatter(ex_scramble    if needs_scramble else ex_cube)
+            prompt = (
+                "Example:\n\n"
+                f"{ex_text}\n\n"
+                f"Solution: {ex_sol_str}\n\n"
+                "---\n\n"
+                "Now solve this cube:\n\n"
+                f"{rep_text}"
+            )
+            try:
+                raw = query_model(prompt, model, client)
+                moves = parse_moves(raw)
+                if moves is None:
+                    solved, sol_len = False, None
+                    tag = f"PARSE_FAIL  raw={raw[:50]!r}"
+                else:
+                    solved = validate(state, moves)
+                    sol_len = len(moves)
+                    tag = f"{'✓ SOLVED' if solved else '✗ WRONG '}  len={sol_len}  optimal={opt_d}"
+                results[rep_name].append((opt_d, solved, sol_len))
+                _log(model, f"  [{rep_name:<16}] {tag}")
+            except Exception as e:
+                _log(model, f"  [{rep_name:<16}] ERROR: {e}")
+                results[rep_name].append((opt_d, False, None))
+
+            time.sleep(PROVIDER_SLEEP.get(provider_for(model), 4.0))
+
+    _log(model, "Done.")
+    return model, results
+
+
 def run():
     print("Loading BFS distance table...")
     distances = DistanceTable.load(CACHE_PATH)
@@ -511,54 +577,197 @@ def run():
 
     all_results: dict[str, dict] = {}
 
-    for model in active_models:
-        print(f"{'─'*72}")
-        print(f"Testing model: {model}")
-        print(f"{'─'*72}\n")
-
-        client = clients[provider_for(model)]
-        results = {name: [] for name, _, _ in rep_configs}
-
-        for case_idx, (state, scramble_moves, opt_d) in enumerate(cases):
-            cube = Cube(state.copy())
-            print(f"─── Case {case_idx+1}/{len(cases)}  optimal_distance={opt_d}  {cube}")
-
-            for rep_name, formatter, needs_scramble in rep_configs:
-                rep_text = formatter(scramble_moves if needs_scramble else cube)
-                ex_text  = formatter(ex_scramble    if needs_scramble else ex_cube)
-                prompt = (
-                    "Example:\n\n"
-                    f"{ex_text}\n\n"
-                    f"Solution: {ex_sol_str}\n\n"
-                    "---\n\n"
-                    "Now solve this cube:\n\n"
-                    f"{rep_text}"
-                )
-                try:
-                    raw = query_model(prompt, model, client)
-                    moves = parse_moves(raw)
-                    if moves is None:
-                        solved, sol_len = False, None
-                        tag = f"PARSE_FAIL  raw={raw[:50]!r}"
-                    else:
-                        solved = validate(state, moves)
-                        sol_len = len(moves)
-                        tag = f"{'✓ SOLVED' if solved else '✗ WRONG '}  len={sol_len}  optimal={opt_d}"
-                    results[rep_name].append((opt_d, solved, sol_len))
-                    print(f"  [{rep_name:<16}] {tag}")
-                except Exception as e:
-                    print(f"  [{rep_name:<16}] ERROR: {e}")
-                    results[rep_name].append((opt_d, False, None))
-
-                time.sleep(4.0)
-
-            print()
-
-        print_summary(model, results, target_distances, rep_configs)
-        all_results[model] = results
+    print(f"Running {len(active_models)} model(s) in parallel...\n")
+    with ThreadPoolExecutor(max_workers=len(active_models)) as pool:
+        futures = {
+            pool.submit(
+                run_model,
+                model,
+                clients[provider_for(model)],
+                cases,
+                rep_configs,
+                ex_scramble,
+                ex_cube,
+                ex_sol_str,
+                target_distances,
+            ): model
+            for model in active_models
+        }
+        for future in as_completed(futures):
+            model, results = future.result()
+            all_results[model] = results
+            print_summary(model, results, target_distances, rep_configs)
 
     if len(active_models) > 1:
         print_comparison(all_results, active_models, target_distances, rep_configs)
+
+    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "llm_eval_results.html")
+    write_html_results(all_results, active_models, target_distances, rep_configs, out_path)
+    print(f"\nWrote {out_path}")
+
+
+def write_html_results(
+    all_results: dict,
+    active_models: list,
+    target_distances: list,
+    rep_configs: list,
+    out_path: str,
+) -> None:
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    _DARK = dict(plot_bgcolor="#0f172a", paper_bgcolor="#1e293b", font=dict(color="#e2e8f0"))
+    _GRID = dict(gridcolor="#334155")
+
+    rep_names = [name for name, _, _ in rep_configs]
+    figs_html = []
+
+    for model in active_models:
+        results = all_results[model]
+
+        # Build solve-rate matrix: rows=reps, cols=distances
+        z = []
+        text = []
+        for rep_name in rep_names:
+            row_z, row_t = [], []
+            res = results[rep_name]
+            by_dist: dict[int, list[bool]] = {}
+            for d, solved, _ in res:
+                by_dist.setdefault(d, []).append(solved)
+            for d in target_distances:
+                if d in by_dist:
+                    k, n = sum(by_dist[d]), len(by_dist[d])
+                    row_z.append(100.0 * k / n)
+                    row_t.append(f"{k}/{n}")
+                else:
+                    row_z.append(0.0)
+                    row_t.append("-")
+            z.append(row_z)
+            text.append(row_t)
+
+        fig_heat = go.Figure(go.Heatmap(
+            z=z,
+            x=[f"d={d}" for d in target_distances],
+            y=rep_names,
+            colorscale="Blues",
+            zmin=0, zmax=100,
+            text=text,
+            texttemplate="%{text}",
+            colorbar=dict(title="Solve %"),
+            hovertemplate="Rep: %{y}<br>Distance: %{x}<br>Solve rate: %{z:.1f}%<extra></extra>",
+        ))
+        fig_heat.update_layout(
+            title=f"{model} — Solve rate (%) by representation and distance",
+            xaxis_title="Optimal distance",
+            yaxis_title="Representation",
+            height=380,
+            **_DARK,
+        )
+
+        # Bar chart: total solve rate per representation
+        totals = []
+        total_texts = []
+        for rep_name in rep_names:
+            res = results[rep_name]
+            n_solved = sum(s for _, s, _ in res)
+            totals.append(100.0 * n_solved / len(res))
+            total_texts.append(f"{n_solved}/{len(res)}")
+
+        fig_bar = go.Figure(go.Bar(
+            x=rep_names,
+            y=totals,
+            text=total_texts,
+            textposition="outside",
+            marker_color="#3b82f6",
+            hovertemplate="%{x}<br>%{text} solved (%{y:.1f}%)<extra></extra>",
+        ))
+        fig_bar.update_layout(
+            title=f"{model} — Total solve rate by representation",
+            xaxis_title="Representation",
+            yaxis_title="Solve rate (%)",
+            yaxis=dict(range=[0, 110], **_GRID),
+            xaxis=dict(**_GRID),
+            height=380,
+            **_DARK,
+        )
+
+        first = not figs_html
+        figs_html.append(fig_heat.to_html(full_html=False, include_plotlyjs="cdn" if first else False))
+        figs_html.append(fig_bar.to_html(full_html=False, include_plotlyjs=False))
+
+    nav_css = """\
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0f172a; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; }
+header { background: #1e293b; border-bottom: 1px solid #334155; padding: 10px 20px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+header h1 { font-size: 14px; font-weight: 700; color: #f1f5f9; white-space: nowrap; }
+nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+nav a { color: #94a3b8; text-decoration: none; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; transition: color .15s, background .15s; white-space: nowrap; }
+nav a:hover { color: #e2e8f0; background: #334155; }
+nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group { position: relative; }
+.nav-group-btn { color: #94a3b8; font-size: 11px; padding: 4px 10px; border-radius: 5px; background: #0f172a; border: 1px solid #334155; cursor: pointer; white-space: nowrap; font-family: inherit; transition: color .15s, background .15s; }
+.nav-group-btn:hover, .nav-group:focus-within .nav-group-btn { color: #e2e8f0; background: #334155; }
+.nav-group-btn.active { color: #f1f5f9; background: #334155; border-color: #475569; }
+.nav-group-menu { display: none; position: absolute; top: calc(100% + 4px); left: 0; background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 4px; min-width: 220px; z-index: 100; flex-direction: column; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.nav-group:hover .nav-group-menu, .nav-group:focus-within .nav-group-menu { display: flex; }
+.nav-group-menu a { border-radius: 4px; }
+.page-intro { max-width: 860px; padding: 18px 20px 4px; }
+.page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
+.page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
+.page-intro strong { color: #cbd5e1; }
+</style>"""
+
+    nav_body = """\
+<header>
+  <h1>2×2 Cube Interpretability</h1>
+  <nav>
+    <a href="index.html">Visualizer</a>
+    <div class="nav-group">
+      <button class="nav-group-btn active">Analyses &#9662;</button>
+      <div class="nav-group-menu">
+        <a href="probe_results.html">Phase 4 — Probing</a>
+        <a href="phase5a_results.html">Phase 5a — Patching</a>
+        <a href="phase5b_results.html">Phase 5b — Lenses &amp; SAE</a>
+        <a href="circuit_results.html">Phase 7 — Circuit</a>
+        <a href="weights_results.html">Phase 8 — Weights</a>
+        <a href="grokking_results.html">Phase 9 — Grokking</a>
+        <a href="next_move_results.html">Phase 10 — Next Move</a>
+        <a href="superposition_results.html">Phase 11 — Superposition</a>
+        <a href="corner_model_results.html">Phase 12 — Corner Model</a>
+        <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
+        <a href="neuron_profile_results.html">Phase 14 — Neuron Profile</a>
+        <a href="corner_circuit_results.html">Phase 15 — Corner Circuit</a>
+        <a href="next_move_analysis_results.html">Phase 16 — Next-Move Analysis</a>
+        <a href="llm_eval_results.html" aria-current="page">Phase 17 — LLM Eval</a>
+      </div>
+    </div>
+  </nav>
+</header>"""
+
+    page_intro = """\
+<section class="page-intro">
+  <h2>Phase 17 — LLM Evaluation: Which Representation Best Enables Solving?</h2>
+  <p><strong>Question:</strong> Which text representation of the cube state gives a general-purpose LLM the best chance of solving it?</p>
+  <p><strong>Method:</strong> Five representations (face_grid, compact_string, corner_cubies, piece_identity, move_sequence) are tested at distances 3, 5, 7, 9, and 11 with a one-shot prompt. Solve rate and solution length are measured.</p>
+  <p><strong>Baseline:</strong> move_sequence gives the model the scramble moves directly — any model that can reverse a sequence achieves a near-100% ceiling. The other representations require genuine spatial reasoning.</p>
+</section>"""
+
+    html = (
+        "<!DOCTYPE html>\n<html>\n<head>\n"
+        '<meta charset="utf-8">\n'
+        + nav_css + "\n"
+        + "<title>Phase 17 — LLM Eval</title>\n"
+        "</head>\n<body>\n"
+        + nav_body + "\n"
+        + page_intro + "\n"
+        + "\n".join(figs_html) + "\n"
+        + "</body>\n</html>\n"
+    )
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write(html)
 
 
 if __name__ == "__main__":

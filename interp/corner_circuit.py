@@ -29,6 +29,7 @@ import torch
 
 from dataset import load_split
 from model import load_model, states_to_corners, CORNER_NAMES
+from interp.corner_attn import accuracy_ablate_head, baseline_accuracy
 
 
 def get_device() -> torch.device:
@@ -144,6 +145,31 @@ def compute_per_head_dla(
             dla[l, h] = correct.mean()
 
     return dla
+
+
+@torch.no_grad()
+def compute_ablation_deltas(
+    model,
+    states_corner: np.ndarray,
+    labels: np.ndarray,
+    device: torch.device | None = None,
+) -> tuple[float, np.ndarray]:
+    """
+    Run accuracy_ablate_head for every (layer, head) pair.
+    Returns (baseline_acc, delta_matrix) where delta[l,h] = baseline - ablated_acc
+    (positive = head is load-bearing).
+    """
+    if device is None:
+        device = next(model.parameters()).device
+    n_layers = model.cfg["n_layers"]
+    n_heads  = model.cfg["n_heads"]
+    base = baseline_accuracy(model, states_corner, labels, device=device)
+    deltas = np.zeros((n_layers, n_heads))
+    for l in range(n_layers):
+        for h in range(n_heads):
+            acc = accuracy_ablate_head(model, states_corner, labels, l, h, device=device)
+            deltas[l, h] = base - acc
+    return base, deltas
 
 
 # ---------------------------------------------------------------------------
@@ -302,6 +328,39 @@ def _build_ov_fig(model, top_heads: list[tuple[int, int]]):
     return fig
 
 
+def _build_dla_ablation_scatter_fig(dla: np.ndarray, deltas: np.ndarray, baseline: float):
+    import plotly.graph_objects as go
+
+    n_layers, n_heads = dla.shape
+    labels_text, x_vals, y_vals = [], [], []
+    for l in range(n_layers):
+        for h in range(n_heads):
+            labels_text.append(f"L{l}H{h}")
+            x_vals.append(float(dla[l, h]))
+            y_vals.append(float(deltas[l, h] * 100))
+
+    fig = go.Figure(go.Scatter(
+        x=x_vals, y=y_vals,
+        mode="markers+text",
+        text=labels_text,
+        textposition="top center",
+        marker=dict(size=10, color="#3b82f6", line=dict(color="#1e40af", width=1)),
+        hovertemplate="%{text}<br>DLA: %{x:.3f}<br>Acc drop: %{y:.2f}pp<extra></extra>",
+    ))
+    fig.add_hline(y=0, line=dict(color="#475569", dash="dash", width=1))
+    fig.add_vline(x=0, line=dict(color="#475569", dash="dash", width=1))
+    fig.update_layout(
+        title=f"DLA vs ablation sensitivity — baseline {baseline*100:.1f}%<br>"
+              "<sup>Points above x-axis: ablating hurts. "
+              "Points right of y-axis: head promotes correct logit.</sup>",
+        xaxis=dict(title="Mean DLA (contribution to correct-distance logit)", gridcolor="#334155"),
+        yaxis=dict(title="Accuracy drop when ablated (pp)", gridcolor="#334155"),
+        height=480,
+        paper_bgcolor="#0f172a", plot_bgcolor="#1e293b", font_color="#e2e8f0",
+    )
+    return fig
+
+
 def _build_token_pair_fig(pair_matrix: np.ndarray, layer: int, head: int):
     import plotly.graph_objects as go
 
@@ -373,6 +432,8 @@ NAV_BODY = """\
         <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
         <a href="neuron_profile_results.html">Phase 14 — Neuron Profile</a>
         <a href="corner_circuit_results.html" aria-current="page">Phase 15 — Corner Circuit</a>
+        <a href="next_move_analysis_results.html">Phase 16 — Next-Move Analysis</a>
+        <a href="llm_eval_results.html">Phase 17 — LLM Eval</a>
       </div>
     </div>
     <a href="progress_report.pdf">Progress Report &#8599;</a>
@@ -384,7 +445,7 @@ PAGE_DESCRIPTION = """\
   <h2>Phase 15 — Corner Model Circuit Analysis</h2>
   <p><strong>Question:</strong> Which heads carry causal distance signal, and what does the dominant head (L0H1) actually compute?</p>
   <p><strong>Method:</strong> Decompose attention output by head; compute per-head DLA via the OV circuit and mean-pool. Project W_OV onto distance unembedding directions. For L0H1, compute the mean (dst, src) cubie-pair contribution to the correct-distance logit.</p>
-  <p><strong>Finding:</strong> DLA order matches ablation sensitivity — L0H1 dominates. The token-pair contribution heatmap reveals which specific corner pairs L0H1 routes information between, characterizing the geometric routing circuit.</p>
+  <p><strong>Finding:</strong> DLA and ablation sensitivity diverge: L3H1 has the largest |DLA| (−1.70) but L0H1 has the highest ablation sensitivity. The scatter plot of DLA vs ablation drop reveals whether heads suppress wrong distances (negative DLA, load-bearing) vs. promote correct ones (positive DLA). The token-pair contribution heatmap shows which specific corner pairs L0H1 routes information between.</p>
 </section>"""
 
 
@@ -455,9 +516,17 @@ def main(args: argparse.Namespace) -> None:
     for score, dst, src in flat_pairs[:5]:
         print(f"    {CORNER_NAMES[src]} → {CORNER_NAMES[dst]}: {score:.4f}")
 
+    print("\nComputing ablation deltas (16 head ablations)...")
+    baseline, deltas = compute_ablation_deltas(model, states_corner, labels, device=device)
+    print(f"  Baseline accuracy: {baseline*100:.1f}%")
+    print("  Accuracy drop matrix (layer × head, pp):")
+    for l in range(n_layers):
+        print(f"    L{l}: {['  {:+.2f}'.format(deltas[l,h]*100) for h in range(n_heads)]}")
+
     print("\nBuilding figures...")
     figs = [
         _build_head_dla_fig(dla),
+        _build_dla_ablation_scatter_fig(dla, deltas, baseline),
         _build_ov_fig(model, top3),
         _build_token_pair_fig(pair_matrix, *l0h1),
     ]

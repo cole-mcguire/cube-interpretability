@@ -254,6 +254,53 @@ input[type=number] {
 /* ── Divider ── */
 hr { border: none; border-top: 1px solid #334155; }
 
+/* ── Model prediction panel ── */
+#model-panel {
+  border: 1px solid #334155;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #1e293b;
+}
+.prob-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.prob-bar-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+  min-width: 18px;
+  text-align: right;
+}
+.prob-bar-outer {
+  flex: 1;
+  height: 10px;
+  background: #0f172a;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prob-bar-fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+.prob-bar-fill.top { background: #10b981; }
+.prob-bar-val {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: monospace;
+  min-width: 38px;
+  text-align: right;
+}
+#model-status {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
 /* ── Log section ── */
 #log-section {
   display: flex;
@@ -345,6 +392,8 @@ hr { border: none; border-top: 1px solid #334155; }
         <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
         <a href="neuron_profile_results.html">Phase 14 — Neuron Profile</a>
         <a href="corner_circuit_results.html">Phase 15 — Corner Circuit</a>
+        <a href="next_move_analysis_results.html">Phase 16 — Next-Move Analysis</a>
+        <a href="llm_eval_results.html">Phase 17 — LLM Eval</a>
       </div>
     </div>
     <a href="progress_report.pdf">Progress Report ↗</a>
@@ -427,6 +476,12 @@ hr { border: none; border-top: 1px solid #334155; }
       <div id="status-solved"></div>
       <div id="status-info"></div>
       <div id="status-history"></div>
+    </div>
+
+    <div id="model-panel">
+      <div class="section-label" style="margin-bottom:6px">Distance Model — P(d)</div>
+      <div id="prob-bars"></div>
+      <div id="model-status">Loading model…</div>
     </div>
 
   </div>
@@ -720,6 +775,7 @@ function updateStatus() {
     moveHistory.length
       ? `History${moveHistory.length>18?' (last 18)':''}: ${last18}`
       : 'History: none';
+  runModelInference();
 }
 
 function countFacesSolved(state) {
@@ -940,6 +996,64 @@ function stopPlay() {
 
 // ── Initial draw ──────────────────────────────────────────────────────────────
 redraw();
+
+// ── Distance model inference (onnxruntime-web) ───────────────────────────────
+let ortSession = null;
+
+function stateToOneHot(state) {
+  const out = new Float32Array(144);
+  for (let i = 0; i < 24; i++) out[i * 6 + state[i]] = 1.0;
+  return out;
+}
+
+function updateProbBars(probs) {
+  const container = document.getElementById('prob-bars');
+  container.innerHTML = '';
+  const predD = probs.indexOf(Math.max(...probs));
+  probs.forEach((p, d) => {
+    if (p < 0.005 && d !== predD) return;
+    const row = document.createElement('div');
+    row.className = 'prob-bar-row';
+    const pct = (p * 100).toFixed(1);
+    row.innerHTML =
+      `<span class="prob-bar-label">${d}</span>` +
+      `<div class="prob-bar-outer"><div class="prob-bar-fill${d===predD?' top':''}" style="width:${pct}%"></div></div>` +
+      `<span class="prob-bar-val">${pct}%</span>`;
+    container.appendChild(row);
+  });
+}
+
+async function runModelInference() {
+  if (!ortSession) return;
+  try {
+    const input = stateToOneHot(cubeState);
+    const tensor = new ort.Tensor('float32', input, [1, 144]);
+    const out = await ortSession.run({ state: tensor });
+    const logits = Array.from(out.logits.data);
+    const maxL = Math.max(...logits);
+    const exps = logits.map(x => Math.exp(x - maxL));
+    const sumE = exps.reduce((a, b) => a + b, 0);
+    updateProbBars(exps.map(x => x / sumE));
+  } catch (_) {}
+}
+
+async function loadModel() {
+  const statusEl = document.getElementById('model-status');
+  try {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    ortSession = await ort.InferenceSession.create('model.onnx');
+    statusEl.textContent = '';
+    runModelInference();
+  } catch (e) {
+    statusEl.textContent = 'Model unavailable — serve from a local server to enable live inference.';
+  }
+}
+loadModel();
 </script>
 </body>
 </html>
