@@ -1,6 +1,9 @@
 # Rubik's Cube Mechanistic Interpretability
 
-A mechanistic interpretability project using the 2×2×2 Rubik's cube as a controlled setting. We train a small transformer on optimal-distance classification, then probe and patch its residual stream to understand what it learns and how. A parallel line of work evaluates text representations of cube state for pre-trained LLM reasoning.
+A mechanistic interpretability project using the 2×2×2 Rubik's cube as a controlled setting. The project has two parallel lines of work:
+
+- **Interpretability track** — train a small transformer on optimal-distance classification, then probe, patch, and dissect its residual stream to understand what it learns and how
+- **LLM evaluation track** — benchmark seven pre-trained LLMs across eight text representations of cube state to test whether in-context reasoning alone can solve scrambles
 
 **Website:** [cole-mcguire.github.io/cube-interpretability](https://cole-mcguire.github.io/cube-interpretability)
 
@@ -16,7 +19,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 6. **Patches** activations causally to distinguish features the model *uses* from those it merely encodes
 7. **Tuned lens** — trains a per-layer affine transform to read off predictions at each intermediate layer, revealing how the model builds up its answer
 8. **Sparse autoencoder** — trains an overcomplete SAE on each layer's residual stream to find monosemantic features and check alignment with known concepts
-9. **Text representations** — evaluates five ways to describe cube state in natural language and tests whether a pre-trained LLM can solve scrambles from each
+9. **Text representations** — evaluates eight ways to describe cube state in natural language and tests whether a pre-trained LLM can solve scrambles from each
 10. **Circuit identification** — DLA, activation patching, and neuron DLA identify which components carry the distance signal and which individual neurons are most distance-tuned
 11. **Weight-level analysis** — SVD of the embedding matrix, direct read-out path accuracy, and per-neuron input/output profiles close the loop on the circuit
 12. **Training dynamics** — re-trains with per-epoch checkpoints, then tracks per-distance accuracy, layer-wise probe MAE, and component DLA over time to reveal phase transitions
@@ -70,12 +73,14 @@ cube-interpretability/
 │                           Accuracy drop per head, mean 8×8 patterns, U/D layer bias, distance modulation
 │
 ├── print_test_cases.py     Phase 6 — generates text representations of scrambled
-│                           states for manual LLM testing; outputs 5 formats
+│                           states for manual LLM testing; outputs 8 formats
 │                           (face_grid, compact_string, corner_cubies,
-│                           piece_identity, move_sequence) + CoT variant
+│                           piece_identity, move_sequence, natural_language,
+│                           perm_orient, cycle_notation) + CoT variant
 │
-├── test_representations.py Phase 6 — automated API evaluation of all 5 representations
-│                           across multiple LLMs (OpenAI, Gemini, Anthropic, Groq)
+├── test_representations.py Phase 17 — automated API evaluation of all 8 representations
+│                           across 7 LLMs (OpenAI, Gemini, Anthropic, Groq);
+│                           results cached in data/llm_eval_cache.json
 │
 ├── walkthrough.ipynb       Executed notebook: all phases with inline plots
 │
@@ -105,13 +110,15 @@ cube-interpretability/
 │   ├── train.npz
 │   ├── val.npz
 │   ├── test.npz
-│   ├── No_CoT.txt          LLM responses: all 5 representations × 3 distances (no chain-of-thought)
-│   ├── CoT.txt             LLM responses: piece_identity + CoT × 3 distances
-│   ├── Gemini_2_5_Pro.txt  Gemini 2.5 Pro responses: all 5 representations × distances 1–11
-│   ├── GPT_4o.txt          GPT-4o responses: all 5 representations × distances 1–11
-│   ├── GPT_5_2.txt         GPT-5.2 responses: all 5 representations × distances 1–11
-│   ├── GPT_5_4.txt         GPT-5.4 responses: all 5 representations × distances 1–11
-│   └── Llama3.3_70B_Groq.txt  Llama 3.3 70B (Groq) responses: all 5 representations × distances 1–11
+│   ├── llm_eval_cache.json Persistent eval cache: 7 models × 8 representations × d=3–11
+│   │                       (N=100/distance for move_sequence; N=10/distance for state reps)
+│   ├── No_CoT.txt          Early pilot responses: all 5 reps × 3 distances (no CoT)
+│   ├── CoT.txt             Early pilot responses: piece_identity + CoT × 3 distances
+│   ├── Gemini_2_5_Pro.txt  Early pilot: Gemini 2.5 Pro × 5 reps × distances 1–11
+│   ├── GPT_4o.txt          Early pilot: GPT-4o × 5 reps × distances 1–11
+│   ├── GPT_5_2.txt         Early pilot: GPT-5.2 × 5 reps × distances 1–11
+│   ├── GPT_5_4.txt         Early pilot: GPT-5.4 × 5 reps × distances 1–11
+│   └── Llama3.3_70B_Groq.txt  Early pilot: Llama 3.3 70B × 5 reps × distances 1–11
 │
 ├── checkpoints/            (gitignored — regenerate with uv run cube-train)
 │   └── best.pt
@@ -125,11 +132,9 @@ cube-interpretability/
 `cube.py` exposes two functions for optimal solving (requires the BFS distance table):
 
 ```python
-import pickle
-from cube import Cube, MOVE_NAMES, solve, generate_scramble_solution_pairs
+from cube import Cube, DistanceTable, MOVE_NAMES, solve, generate_scramble_solution_pairs
 
-with open("data/distances_cache.pkl", "rb") as f:
-    distances = pickle.load(f)
+distances = DistanceTable.load("data/distances.npz")  # mmap, ~0.1 s
 
 # Solve a single cube state
 cube = Cube()
@@ -173,7 +178,7 @@ uv run python -m interp.tuned_lens
 # Phase 5c: sparse autoencoder
 uv run python -m interp.sae
 
-# Phase 6: generate text representation test cases for manual LLM evaluation
+# Phase 6/17: generate text representation test cases for manual LLM evaluation
 uv run python print_test_cases.py
 
 # Phase 7: circuit identification (DLA, activation patching, neuron DLA)
@@ -272,7 +277,7 @@ The model is effectively a linear classifier over its own embedded state, but th
 - Corner orientation features are weaker (r ≈ 0.5–0.63) and strongest at the embedding layer, again confirming that corner orientation is encoded early and then transformed away
 - The final layer (L3) is naturally sparser (mean L0 ≈ 200 vs ~400 in earlier layers), consistent with the model compressing to a decision
 
-**Phase 6 — Text representations:**
+**Phase 17 — LLM evaluation of text representations:**
 
 An initial pilot (GPT-5 via chat, 1 case per distance, no code prohibition — the model frequently wrote Python to find solutions) gave:
 
@@ -285,19 +290,21 @@ An initial pilot (GPT-5 via chat, 1 case per distance, no code prohibition — t
 | `move_sequence` — the scramble itself (degenerate baseline) | ✓ | ✓ | ✓ |
 | `piece_identity` + chain-of-thought | ✓ | ✗ | ✗ |
 
-A subsequent automated evaluation (API, 10 cases per distance, d=3–11, code explicitly prohibited) tested all five representations including `piece_identity` and found that **all state-based representations score 0% across every model and every distance**. Only `move_sequence` (trivial inversion) varies:
+A large-scale automated evaluation (API, 100 cases/distance for `move_sequence`, 10 cases/distance for state reps, d=3–11, code prohibited) extended the study to **8 representations** and **7 models**. All state-based representations (including three new ones: `natural_language`, `perm_orient`, `cycle_notation`) score **0% across every model and every distance**. Only `move_sequence` (trivial inversion) varies:
 
 | Model | d=3 | d=5 | d=7 | d=9 | d=11 | Total |
 |---|---|---|---|---|---|---|
-| GPT-5.4 | 10/10 | 10/10 | 7/10 | 6/10 | 9/10 | 42/50 (84%) |
-| GPT-5.2 | 9/10 | 9/10 | 8/10 | 8/10 | 9/10 | 43/50 (86%) |
-| Gemini 2.5 Pro | 9/10 | 8/10 | 9/10 | 8/10 | 1/2* | 35/42 (83%) |
-| GPT-4o | 5/10 | 1/10 | 1/10 | 0/10 | 1/10 | 8/50 (16%) |
-| Llama 3.3 70B | 3/10 | 1/10 | 1/10 | 0/10 | 0/2* | 5/42 (12%) |
+| GPT-5.5 | 100/100 | 100/100 | 100/100 | 100/100 | 48/48 | 448/448 (100%) |
+| GPT-5.4 | 100/100 | 99/100 | 100/100 | 100/100 | 47/48 | 446/448 (100%) |
+| Gemini 2.5 Pro | 98/100 | 92/100 | 84/100 | 72/100 | 33/48 | 379/448 (85%) |
+| Claude Sonnet 4.6 | 62/100 | 58/100 | 45/100 | 41/100 | 11/48 | 217/448 (48%) |
+| Claude Opus 4.7 | 55/100 | 41/100 | 27/100 | 15/100 | 4/48 | 142/448 (32%) |
+| GPT-4o | 62/100 | 44/100 | 18/100 | 18/100 | 3/48 | 145/448 (32%) |
+| Llama 3.3 70B | — | — | — | — | — | insufficient data† |
 
-\* Only 2 d=11 cases captured in that run.
+† Groq free-tier rate limits prevented completing the N=100 run for Llama.
 
-Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–86%); GPT-4o and Llama trail at 12–16%, reflecting differences in notation parsing rather than cube understanding. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth.
+Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion; Gemini 2.5 Pro scores 85%; Claude models and GPT-4o trail at 32–48%; Llama at 12% in the earlier pilot. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth. No representation, including verbose natural-language or group-theoretic encodings, enabled any model to solve even a single scramble.
 
 **Phase 7 — Circuit identification:**
 - `mlp_0` has by far the highest DLA (+5.6), making it the dominant component in the circuit; all attention layers contribute negatively (−0.2 to −1.4)
@@ -308,6 +315,11 @@ Frontier models (GPT-5.x, Gemini 2.5 Pro) reliably invert move sequences (83–8
 - The direct read-out path W_U @ W_E achieves only 8.4% accuracy (random baseline 8.3%) — the embedding alone, without any MLP computation, cannot linearly predict distance; the transformer blocks are necessary
 - The top-8 embedding singular values are nearly equal (3.32–2.87), suggesting the embedding is roughly isotropic and does not preferentially align with any single input direction
 - Top neuron input profiles (fc1.weight[n] @ W_E, reshaped to 24×6) show structured sticker-color selectivity; output profiles (W_U @ fc2.weight[:,n]) reveal which neurons promote specific distance classes vs. suppress them
+
+**Phase 9 — Training dynamics:**
+- No sharp grokking-style phase transition — accuracy builds gradually with a mild plateau around epochs 5–8 before continuing to improve
+- `mlp_0` DLA grows monotonically throughout training; distance probes improve smoothly at every layer — consistent with incremental learning rather than sudden generalization
+- Per-distance accuracy heatmap shows easy distances (d=0–2) converge first; hard distances (d=5–9) improve slowly and uniformly across epochs
 
 **Phase 10 — Next-move prediction variant:**
 - A model trained on next-move prediction (18 random scramble moves) achieves only 6.3% val accuracy — barely above the 5.6% random baseline — because scramble moves are unpredictable from cube state alone

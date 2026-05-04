@@ -40,9 +40,11 @@ MODELS = [
     "gpt-4o",
     "gemini-2.5-pro",
     "llama-3.3-70b-versatile",
+    "gpt-5.4",
+    "gpt-5.5",
 ]
 
-N_PER_DISTANCE = 10  # test cases per distance level (50 total × 5 reps × n_models queries)
+N_PER_DISTANCE = 1  # test cases per distance level (50 total × 5 reps × n_models queries)
 
 RESULTS_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "llm_eval_cache.json")
 
@@ -256,6 +258,148 @@ def fmt_piece_identity(cube: Cube) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Shared helper for new formatters
+# ---------------------------------------------------------------------------
+
+_COLOR_FULL = {"W": "white", "Y": "yellow", "G": "green", "B": "blue", "R": "red", "O": "orange"}
+_FACE_FULL  = {"U": "top", "D": "bottom", "F": "front", "B": "back", "L": "left", "R": "right"}
+_POS_FULL   = {
+    "UFR": "top-front-right",    "UFL": "top-front-left",
+    "UBL": "top-back-left",      "UBR": "top-back-right",
+    "DFR": "bottom-front-right", "DFL": "bottom-front-left",
+    "DBL": "bottom-back-left",   "DBR": "bottom-back-right",
+}
+_HOME_COLORS = [pc for _, _, pc in _SOLVED_PIECES]
+
+
+def _corner_state(cube: Cube) -> list[tuple[int, str]]:
+    """Return [(home_idx, ud_face), ...] for each of the 8 corner slots."""
+    s = cube.state
+    result = []
+    for slot_idx, (si0, si1, si2) in enumerate(CORNER_STICKERS):
+        c0 = IDX_TO_COLOR[int(s[si0])]
+        c1 = IDX_TO_COLOR[int(s[si1])]
+        c2 = IDX_TO_COLOR[int(s[si2])]
+        cur_colors = frozenset([c0, c1, c2])
+        home_idx = next(i for i, hc in enumerate(_HOME_COLORS) if hc == cur_colors)
+        _, ud_color, _ = _SOLVED_PIECES[home_idx]
+        dirs = CORNER_FACE_DIRS[slot_idx]
+        if c0 == ud_color:
+            ud_face = dirs[0]
+        elif c1 == ud_color:
+            ud_face = dirs[1]
+        else:
+            ud_face = dirs[2]
+        result.append((home_idx, ud_face))
+    return result
+
+
+def fmt_natural_language(cube: Cube) -> str:
+    cs = _corner_state(cube)
+    lines = [
+        "Standard orientation: White on top (U), Green in front (F)",
+        "The cube has 8 corner pieces, each identified by its 3 colors.",
+        "Goal: every piece at its home position with white or yellow facing up or down.",
+        "",
+    ]
+    for slot_idx, (home_idx, ud_face) in enumerate(cs):
+        slot_name = POS_NAMES[slot_idx]
+        home_name = POS_NAMES[home_idx]
+        piece_abbr, ud_color, _ = _SOLVED_PIECES[home_idx]
+        piece_desc = "-".join(_COLOR_FULL[c] for c in piece_abbr.split("-"))
+        ud_color_full = _COLOR_FULL[ud_color]
+        ud_face_full  = _FACE_FULL[ud_face]
+        at_home    = slot_idx == home_idx
+        ud_correct = ud_face in ("U", "D")
+
+        if at_home and ud_correct:
+            sentence = f"The {piece_desc} corner is solved at {_POS_FULL[slot_name]}."
+        elif at_home:
+            sentence = (f"The {piece_desc} corner is at its home position ({_POS_FULL[slot_name]}) "
+                        f"but {ud_color_full} faces {ud_face_full} — needs a twist.")
+        elif ud_correct:
+            sentence = (f"The {piece_desc} corner is at {_POS_FULL[slot_name]} "
+                        f"(home: {_POS_FULL[home_name]}), {ud_color_full} correctly faces {ud_face_full} — needs to move.")
+        else:
+            sentence = (f"The {piece_desc} corner is at {_POS_FULL[slot_name]} "
+                        f"(home: {_POS_FULL[home_name]}), {ud_color_full} faces {ud_face_full} — needs to move and twist.")
+        lines.append(sentence)
+    return "\n".join(lines)
+
+
+def fmt_permutation_orientation(cube: Cube) -> str:
+    cs = _corner_state(cube)
+    perm = [home_idx for home_idx, _ in cs]
+    orient = []
+    for _, ud_face in cs:
+        if ud_face in ("U", "D"):
+            orient.append(0)
+        elif ud_face in ("F", "B"):
+            orient.append(1)
+        else:
+            orient.append(2)
+    lines = [
+        "Standard orientation: White on top (U), Green in front (F)",
+        "Corner slots indexed 0–7: 0=UFR 1=UFL 2=UBL 3=UBR 4=DFR 5=DFL 6=DBL 7=DBR",
+        "Solved state: perm=[0,1,2,3,4,5,6,7]  orient=[0,0,0,0,0,0,0,0]",
+        "",
+        "perm[i]   = home-position index of the piece currently at slot i",
+        "orient[i] = 0 if the W/Y sticker faces U or D (correct)",
+        "            1 if the W/Y sticker faces F or B",
+        "            2 if the W/Y sticker faces L or R",
+        "",
+        f"perm  : {perm}",
+        f"orient: {orient}",
+    ]
+    return "\n".join(lines)
+
+
+def fmt_cycle_notation(cube: Cube) -> str:
+    cs = _corner_state(cube)
+    perm = [home_idx for home_idx, _ in cs]
+    # inv_perm[home_idx] = slot where that piece currently lives
+    inv_perm = [0] * 8
+    for slot_idx, home_idx in enumerate(perm):
+        inv_perm[home_idx] = slot_idx
+
+    visited = [False] * 8
+    cycles = []
+    for start in range(8):
+        if visited[start]:
+            continue
+        cycle = []
+        cur = start
+        while not visited[cur]:
+            visited[cur] = True
+            cycle.append(cur)
+            cur = inv_perm[cur]
+        if len(cycle) > 1:
+            cycles.append(cycle)
+
+    if not cycles:
+        perm_str = "(identity — all corners at home positions)"
+    else:
+        perm_str = "  ".join("(" + " ".join(POS_NAMES[i] for i in cyc) + ")" for cyc in cycles)
+
+    twisted = []
+    for slot_idx, (_, ud_face) in enumerate(cs):
+        if ud_face not in ("U", "D"):
+            t = 1 if ud_face in ("F", "B") else 2
+            twisted.append(f"{POS_NAMES[slot_idx]}:{t}")
+    twist_str = "  ".join(twisted) if twisted else "none"
+
+    lines = [
+        "Standard orientation: White on top (U), Green in front (F)",
+        "(A B C) means: piece from home A is at slot B, piece from home B is at slot C, piece from home C is at slot A.",
+        "Twist key: 1 = W/Y sticker faces F/B, 2 = W/Y sticker faces L/R (0 = correct, omitted).",
+        "",
+        f"Corner permutation: {perm_str}",
+        f"Twisted corners:     {twist_str}",
+    ]
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
 # Prompt
 # ---------------------------------------------------------------------------
 
@@ -282,16 +426,26 @@ No explanation. No extra text. Example: U R' F2 D B2 L\
 # Per-provider query implementations
 # ---------------------------------------------------------------------------
 
+def _openai_is_reasoning(model: str) -> bool:
+    # o-series and gpt-5.x use internal chain-of-thought and need more tokens
+    return any(model.startswith(p) for p in ("o1", "o2", "o3", "o4", "gpt-5."))
+
+
 def _query_openai(prompt: str, model: str, client) -> str:
-    response = client.chat.completions.create(
+    reasoning = _openai_is_reasoning(model)
+    kwargs = dict(
         model=model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": prompt},
         ],
-        max_completion_tokens=512,
-        temperature=0.0,
+        max_completion_tokens=16384 if reasoning else 512,
     )
+    if reasoning:
+        kwargs["reasoning_effort"] = "low"
+    else:
+        kwargs["temperature"] = 0.0
+    response = client.chat.completions.create(**kwargs)
     text = response.choices[0].message.content
     if not text:
         raise ValueError(f"Empty response: finish_reason={response.choices[0].finish_reason}")
@@ -323,12 +477,16 @@ def _query_gemini(prompt: str, model: str, client) -> str:
     return text.strip()
 
 
+_ANTHROPIC_THINKING_MODELS = {"claude-opus-4-7", "claude-opus-4-8"}
+
 def _query_anthropic(prompt: str, model: str, client) -> str:
+    kwargs = {} if model in _ANTHROPIC_THINKING_MODELS else {"temperature": 0}
     response = client.messages.create(
         model=model,
         max_tokens=512,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
+        **kwargs,
     )
     text = response.content[0].text if response.content else None
     if not text:
@@ -367,12 +525,17 @@ def query_model(prompt: str, model: str, client, retries: int = 6) -> str:
         try:
             return _QUERY_FNS[provider](prompt, model, client)
         except Exception as e:
-            if attempt < retries and "429" in str(e):
+            err = str(e)
+            if attempt < retries and "429" in err:
                 import re as _re
-                m = _re.search(r"try again in (?:(\d+)m\s*)?(\d+(?:\.\d+)?)s", str(e))
+                m = _re.search(r"try again in (?:(\d+)m\s*)?(\d+(?:\.\d+)?)s", err)
                 wait = int((int(m.group(1) or 0) * 60) + float(m.group(2))) + 2 if m else delay
                 print(f"    rate-limited, retrying in {wait}s…")
                 time.sleep(wait)
+                delay = min(delay * 2, 120)
+            elif attempt < retries and "503" in err:
+                print(f"    503 unavailable, retrying in {delay}s…")
+                time.sleep(delay)
                 delay = min(delay * 2, 120)
             else:
                 raise
@@ -382,15 +545,34 @@ def query_model(prompt: str, model: str, client, retries: int = 6) -> str:
 # ---------------------------------------------------------------------------
 
 def parse_moves(response: str) -> list[int] | None:
-    tokens = response.strip().split()
-    moves = []
-    for token in tokens:
-        token = token.strip(".,;:()")
-        if token in MOVE_NAME_TO_IDX:
-            moves.append(MOVE_NAME_TO_IDX[token])
-        else:
+    def _line_to_moves(line: str) -> list[int] | None:
+        tokens = [t.strip(".,;:()[]") for t in line.split()]
+        if not tokens:
             return None
-    return moves if moves else None
+        if all(t in MOVE_NAME_TO_IDX for t in tokens):
+            return [MOVE_NAME_TO_IDX[t] for t in tokens]
+        return None
+
+    # 1. Try each line (handles models that output reasoning then a final move line)
+    for line in reversed(response.strip().splitlines()):
+        result = _line_to_moves(line.strip())
+        if result:
+            return result
+
+    # 2. Fallback: longest consecutive run of valid move tokens across the whole response
+    all_tokens = [t.strip(".,;:()[]") for t in response.split()]
+    best: list[str] = []
+    current: list[str] = []
+    for t in all_tokens:
+        if t in MOVE_NAME_TO_IDX:
+            current.append(t)
+        else:
+            if len(current) > len(best):
+                best = current[:]
+            current = []
+    if len(current) > len(best):
+        best = current
+    return [MOVE_NAME_TO_IDX[t] for t in best] if best else None
 
 
 def validate(state: np.ndarray, moves: list[int]) -> bool:
@@ -520,7 +702,8 @@ def run_model(
                 f"Solution: {ex_sol_str}\n\n"
                 "---\n\n"
                 "Now solve this cube:\n\n"
-                f"{rep_text}"
+                f"{rep_text}\n\n"
+                "Respond with the move sequence only:"
             )
             try:
                 raw = query_model(prompt, model, client)
@@ -578,21 +761,44 @@ def run(argv=None):
         "--regen-html", action="store_true",
         help="Regenerate the HTML from cached results without running any new queries.",
     )
+    parser.add_argument(
+        "--reps", default=None,
+        help="Comma-separated list of representations to run (default: all). "
+             "E.g. --reps move_sequence or --reps face_grid,compact_string",
+    )
+    parser.add_argument(
+        "--n", type=int, default=None,
+        help=f"Test cases per distance level (default: N_PER_DISTANCE={N_PER_DISTANCE}).",
+    )
     args = parser.parse_args(argv)
 
+    n_per_distance = args.n if args.n is not None else N_PER_DISTANCE
     model_list = [m.strip() for m in args.models.split(",")] if args.models else MODELS
 
     # Load previously saved results
     cache = load_cache()
 
     out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs", "llm_eval_results.html")
-    rep_configs = [
-        ("face_grid",       fmt_face_grid,       False),
-        ("compact_string",  fmt_compact_string,  False),
-        ("corner_cubies",   fmt_corner_cubies,   False),
-        ("piece_identity",  fmt_piece_identity,  False),
-        ("move_sequence",   fmt_move_sequence,   True),
+    all_rep_configs = [
+        ("face_grid",        fmt_face_grid,                False),
+        ("compact_string",   fmt_compact_string,           False),
+        ("corner_cubies",    fmt_corner_cubies,            False),
+        ("piece_identity",   fmt_piece_identity,           False),
+        ("move_sequence",    fmt_move_sequence,            True),
+        ("natural_language", fmt_natural_language,         False),
+        ("perm_orient",      fmt_permutation_orientation,  False),
+        ("cycle_notation",   fmt_cycle_notation,           False),
     ]
+    if args.reps:
+        wanted = {r.strip() for r in args.reps.split(",")}
+        unknown = wanted - {name for name, _, _ in all_rep_configs}
+        if unknown:
+            print(f"Unknown rep(s): {', '.join(sorted(unknown))}. "
+                  f"Valid: {', '.join(n for n, _, _ in all_rep_configs)}")
+            return
+        rep_configs = [r for r in all_rep_configs if r[0] in wanted]
+    else:
+        rep_configs = all_rep_configs
     target_distances = [3, 5, 7, 9, 11]
 
     if args.regen_html:
@@ -600,7 +806,7 @@ def run(argv=None):
             print("No cached results found. Run without --regen-html first.")
             return
         all_models = list(cache.keys())
-        write_html_results(cache, all_models, target_distances, rep_configs, out_path)
+        write_html_results(cache, all_models, target_distances, all_rep_configs, out_path)
         print(f"Wrote {out_path}")
         return
 
@@ -632,8 +838,8 @@ def run(argv=None):
     print(f"  Scramble : {' '.join(MOVE_NAMES[m] for m in ex_scramble)}")
     print(f"  Solution : {ex_sol_str}\n")
 
-    print(f"Generating test cases ({N_PER_DISTANCE} per distance level)...")
-    cases = generate_test_cases(distances, N_PER_DISTANCE, target_distances)
+    print(f"Generating test cases ({n_per_distance} per distance level)...")
+    cases = generate_test_cases(distances, n_per_distance, target_distances)
     print(f"  {len(cases)} cases ready\n")
 
     new_results: dict[str, dict] = {}
@@ -658,17 +864,25 @@ def run(argv=None):
             model, results = future.result()
             new_results[model] = results
             print_summary(model, results, target_distances, rep_configs)
+            # Save incrementally so a crash doesn't lose completed models
+            if model in cache:
+                cache[model].update(results)
+            else:
+                cache[model] = results
+            save_cache(cache)
+            print(f"  (checkpoint saved — {model} done)")
 
     if len(active_models) > 1:
         print_comparison(new_results, active_models, target_distances, rep_configs)
 
-    # Merge new results into cache and save
-    cache.update(new_results)
-    save_cache(cache)
-    print(f"Saved results to {RESULTS_CACHE}")
+    print(f"All results saved to {RESULTS_CACHE}")
 
     all_models = list(cache.keys())
-    write_html_results(cache, all_models, target_distances, rep_configs, out_path)
+    # Build rep list from what's actually present in the cache so the HTML
+    # reflects all reps across all runs, not just the ones run this time.
+    cached_reps = {rep for m in cache.values() for rep in m}
+    html_rep_configs = [r for r in all_rep_configs if r[0] in cached_reps]
+    write_html_results(cache, all_models, target_distances, html_rep_configs, out_path)
     print(f"Wrote {out_path}")
 
 
@@ -691,7 +905,14 @@ def write_html_results(
         """Return (totals[], heatmap_z[], heatmap_text[]) for one model's results."""
         z, text, totals, total_texts = [], [], [], []
         for rep_name in rep_names:
-            res = results[rep_name]
+            res = results.get(rep_name)
+            if res is None:
+                # Rep not run for this model — fill with blanks
+                z.append([0.0] * len(target_distances))
+                text.append(["-"] * len(target_distances))
+                totals.append(0.0)
+                total_texts.append("-")
+                continue
             by_dist: dict[int, list] = {}
             for d, solved, _ in res:
                 by_dist.setdefault(d, []).append(solved)
