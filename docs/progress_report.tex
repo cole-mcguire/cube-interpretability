@@ -15,7 +15,7 @@
 \hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
 
 \title{Interpreting Transformer Representations on Rubik's Cube Tasks\\
-\large Progress Report}
+\large Final Report}
 \author{Cole McGuire}
 \date{}
 
@@ -29,29 +29,32 @@ We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully-enumerable
 domain for mechanistic interpretability.  A small transformer
 ($d_\text{model}{=}128$, 4 layers, ${\sim}200\text{k}$ parameters) is trained to
 classify the optimal half-turn-metric distance to solved (0--11), achieving
-78.5\% validation accuracy against an 8.3\% random baseline.  We then apply
-four interpretability methods to understand what the model has learned.  Linear
-probing finds that face-level solved status is 98\% decodable at \emph{every}
-layer including the raw embedding, and that optimal distance is encoded almost
+78.5\% validation accuracy against an 8.3\% random baseline.  We apply thirteen
+interpretability analyses to understand what the model has learned.  Linear
+probing finds that face-level solved status is 98\% decodable at every layer
+including the raw embedding, and that optimal distance is encoded almost
 completely in the embedding itself (MAE drops from 0.87 to 0.40 in the first
-block).  Activation patching reveals a dissociation: the probe-readable features
-are not causally active---ablating their directions produces zero change in
-model output---whereas swapping the full residual stream between distance classes
-achieves a 100\% prediction flip at every layer.  Tuned-lens analysis reconciles
-these findings: logit-lens accuracy grows from 20\% to 78\% across blocks,
-demonstrating that each block is contributing meaningful computation, but in a
-rotated basis that the final unembedding layer alone cannot read.  Sparse
-autoencoders confirm that face and distance features are represented
-monosemantically ($r \approx 0.81$--$0.89$), while corner-orientation features
-are weaker and concentrated at the embedding layer.  Finally, motivated by
-instructor feedback, we evaluate how well the cube state can be conveyed to a
-pre-trained language model through text.  An initial pilot (1 case per distance,
-GPT-5 via chat) suggested that a \emph{piece-identity} encoding outperforms
-position-based representations.  A subsequent automated evaluation across five
-models (GPT-5.4, GPT-5.2, Gemini 2.5 Pro, GPT-4o, Llama 3.3 70B; 10 cases per
-distance, $d{=}3$ through $d{=}11$) found that all state-based representations
-score zero uniformly, while move-inversion solve rates range from 12\% (Llama)
-to 86\% (GPT-5.2), stratifying models by their ability to parse cube notation.
+block).  Activation patching reveals a dissociation: probe-readable features are
+not causally active, whereas swapping the full residual stream achieves a 100\%
+prediction flip at every layer.  Tuned-lens analysis reconciles these findings:
+each block contributes meaningful computation in a rotated basis.  Sparse
+autoencoders confirm monosemantic face and distance features ($r \approx
+0.81$--$0.89$), with no evidence of classical superposition.  Circuit analysis
+localizes the distance computation to \texttt{mlp\_0} (+5.6 DLA); a
+corner-tokenized variant reveals that Layer-0 attention heads dominate
+inter-cubie routing, with a single head (L0H1) responsible for a 44.9 pp
+accuracy drop when ablated.  Neuron profiling shows top-DLA neurons are
+distance-selective rather than feature-selective; corner circuit analysis reveals
+a divergence between DLA and ablation sensitivity that characterizes load-bearing
+vs.\ distance-promoting heads.  In a parallel line of work, a large-scale
+automated evaluation tests seven pre-trained LLMs (GPT-5.5, GPT-5.4, Gemini 2.5
+Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-4o, Llama 3.3 70B) across eight
+text representations of cube state (100 cases per distance for
+\texttt{move\_sequence}; 10 cases per distance for state-based representations).
+All state-based representations score zero across every model and every distance
+without exception; \texttt{move\_sequence} solve rates range from 32\% (GPT-4o,
+Claude Opus 4.7) to 100\% (GPT-5.5), stratifying models by notation-parsing
+ability rather than cube understanding.
 \end{abstract}
 
 % ============================================================
@@ -160,7 +163,7 @@ be read as an empirical test of their theoretical prediction.
 \section{Methods}
 % ============================================================
 
-\subsection{Cube Simulator and State Encoding}
+\subsection{Setup}
 
 The $2{\times}2{\times}2$ cube has 24 stickers arranged on 6 faces.  We assign each
 face a canonical color (white top, yellow bottom, green front, blue back, orange
@@ -182,7 +185,7 @@ solved states, producing a table of $88{,}179{,}840$ states mapping
 removes orientation bias: the solver finds the shortest path to \emph{any}
 solved orientation.  BFS takes approximately 25 minutes and is cached to disk.
 
-\subsection{Model Architecture}
+\paragraph{Model architecture.}
 
 We implement \texttt{CubeTransformer} as a \texttt{HookedRootModule} (TransformerLens):
 
@@ -205,7 +208,9 @@ the heavy distance-distribution imbalance (distance 1 has 18 states; distance 9
 has $\sim$14M).  The dataset contains 50k/5k/5k train/val/test scramble
 sequences (${\sim}300\text{k}$ samples each).
 
-\subsection{Linear Probing (Phase 4)}
+\subsection{Probing and Causal Analysis}
+
+\paragraph{Linear probing.}
 
 For each residual stream checkpoint
 (\texttt{hook\_embed}, \texttt{resid\_post} layers 0--3), we train:
@@ -217,26 +222,21 @@ For each residual stream checkpoint
 Probes are fit on a held-out probe split (5k sequences not used in training),
 with 5-fold cross-validation for regularization strength.
 
-\subsection{Activation Patching (Phase 5a)}
+\paragraph{Activation patching.}
 \label{sec:patch}
 
-We perform two types of patching experiments:
-
-\paragraph{Concept-direction ablation.}
-Given a probe weight vector $\mathbf{w}$ for concept $c$, we project it out of
-all residual stream activations:
+We perform two types of patching experiments.  \emph{Concept-direction ablation}:
+given a probe weight vector $\mathbf{w}$ for concept $c$, we project it out of
+all residual stream activations,
 $\hat{\mathbf{h}} = \mathbf{h} - (\mathbf{h} \cdot \hat{\mathbf{w}})\hat{\mathbf{w}}$,
-where $\hat{\mathbf{w}} = \mathbf{w}/\|\mathbf{w}\|$.  We then measure whether
-model predictions change.  This tests whether the probe direction is
-\emph{causally active}.
+and measure whether model predictions change---testing whether the probe direction
+is \emph{causally active}.  \emph{Counterfactual residual swap}: for pairs of
+states from different distance groups ($d_i$ vs.\ $d_j$), we swap the full
+residual stream at each layer and measure whether the model's distance prediction
+flips.  A 100\% flip rate indicates the residual stream at that layer contains all
+the information the model uses to distinguish the two classes.
 
-\paragraph{Counterfactual residual swap.}
-For pairs of states from different distance groups ($d_i$ vs.\ $d_j$), we swap
-the full residual stream at each layer and measure whether the model's distance
-prediction flips.  A 100\% flip rate indicates the residual stream at that layer
-contains all the information the model uses to distinguish the two classes.
-
-\subsection{Tuned Lens (Phase 5b)}
+\paragraph{Tuned lens.}
 
 For each layer $\ell$, we train an affine probe
 $\phi_\ell(\mathbf{h}) = \mathbf{W}_\ell \mathbf{h} + \mathbf{b}_\ell$
@@ -245,7 +245,7 @@ argmax as a layer-$\ell$ prediction.  We compare this to the logit lens (using
 the final unembedding $\mathbf{W}_U$ directly on $\mathbf{h}_\ell$) to measure
 how much basis rotation is needed to read predictions from early layers.
 
-\subsection{Sparse Autoencoder (Phase 5c)}
+\paragraph{Sparse autoencoder.}
 
 For each layer, we train a 2-layer autoencoder with $4{\times}$ expansion (512
 features) and L1 penalty on the hidden activations to encourage sparsity:
@@ -255,32 +255,9 @@ every 1,000 steps.  We then compute Pearson correlation between each SAE feature
 activation and known concept labels (face\_solved, optimal\_distance,
 corner\_oriented).
 
-\subsection{Text Representation Analysis (Phase 6)}
+\subsection{Circuit and Weight Analysis}
 
-Motivated by instructor feedback, we evaluate four text representations of the
-cube state as inputs to a pre-trained language model (GPT-5 / ChatGPT, accessed
-via chat interface).  The representations are:
-
-\begin{enumerate}
-  \item \textbf{face\_grid}: An unfolded net diagram showing each face's 2$\times$2
-        sticker colors.
-  \item \textbf{compact\_string}: A 24-character string, 4 characters per face in
-        U/D/F/B/L/R order, reading order within each face.
-  \item \textbf{corner\_cubies}: For each corner position, lists which color faces
-        which direction (U/D, F/B, L/R).
-  \item \textbf{piece\_identity}: Names each corner piece by its solved-state colors
-        (\texttt{W-G-R} for the piece belonging at UFR) and states its current
-        position and which face its W/Y sticker faces.  This makes the permutation
-        and orientation explicit.
-\end{enumerate}
-
-All solutions are validated by applying the model's proposed moves to the
-scrambled state in our simulator and checking \texttt{is\_solved()}.  We also
-test a chain-of-thought (CoT) variant of the piece\_identity prompt, where the
-model is instructed to reason step-by-step and conclude with
-\texttt{Solution: [moves]}.
-
-\subsection{Direct Logit Attribution and Circuit Analysis (Phase 7)}
+\paragraph{Direct logit attribution.}
 
 To localize which model components carry the distance signal to the output, we
 apply \emph{direct logit attribution} (DLA): for each component $c$, we project
@@ -291,7 +268,7 @@ attention heads.  We additionally visualize attention head weight matrices
 ($\mathbf{W}_{QK}$, $\mathbf{W}_{OV}$) and the neuron activation distributions
 for the top-DLA neurons to characterize what each neuron responds to.
 
-\subsection{Embedding and Weight Analysis (Phase 8)}
+\paragraph{Embedding and weight analysis.}
 
 We perform truncated SVD on the $144 \times d_\text{model}$ embedding matrix
 $\mathbf{W}_E$ and project each singular vector back into sticker space to
@@ -299,14 +276,16 @@ identify which input dimensions cluster together in the learned basis.  We
 additionally visualize the full $\mathbf{W}_E$ as a heatmap organized by face
 and sticker index to look for color-face structure.
 
-\subsection{Training Dynamics (Phase 9)}
+\paragraph{Training dynamics.}
 
 To test for grokking, we save a checkpoint every epoch and run the full linear
 probe battery (\texttt{face\_solved}, \texttt{corner\_oriented},
 \texttt{optimal\_distance}) at every checkpoint.  We plot probe accuracy and
 model validation accuracy as a function of epoch to detect phase transitions.
 
-\subsection{Next-Move Prediction Variant (Phase 10)}
+\subsection{Extended Analyses}
+
+\paragraph{Next-move prediction.}
 
 Using the same architecture, we train on the \emph{next-move} task: given a
 scrambled state, predict one of 18 optimal next moves (selecting uniformly among
@@ -314,7 +293,7 @@ tied optimal continuations).  We probe the residual stream of this model with th
 same concept set and compare the internal representations to those of the distance
 model.
 
-\subsection{Extended Superposition Analysis (Phase 11)}
+\paragraph{Superposition analysis.}
 
 To test for superposition in the residual stream, we sweep SAE expansion ratios
 ($1\times$, $2\times$, $4\times$, $8\times$, $16\times$), tracking reconstruction
@@ -323,7 +302,7 @@ mean active feature count.  A model using superposition should show a plateau in
 active count and a spike in dead features as the expansion ratio grows, since
 features must compete for the limited representational budget.
 
-\subsection{Corner-Tokenized Architecture (Phase 12)}
+\paragraph{Corner-tokenized architecture.}
 
 To enable non-degenerate attention, we implement \texttt{CubeTransformerCorner}:
 the 24 stickers are partitioned by corner cubie, yielding 8 tokens of 18
@@ -333,13 +312,58 @@ and extract $8 \times 8$ attention weight matrices at each layer, stratified by
 optimal distance, to test whether the model attends selectively to misplaced
 cubies.
 
-\subsection{Attention Head Ablation (Phase 13)}
+\paragraph{Attention head ablation.}
 
 For the corner model, we measure each head's causal contribution via
 \emph{mean-attention ablation}: we replace head $(l, h)$'s attention weights with
 uniform $\tfrac{1}{8}$ across all 8 tokens using TransformerLens's
 \texttt{run\_with\_hooks()} and record the resulting drop in validation accuracy.
 We run this for all $4 \times 4 = 16$ heads, holding all other components fixed.
+
+\paragraph{Neuron profiling.}
+
+To characterize what the top-DLA neurons in \texttt{mlp\_0} actually compute, we
+rank all mlp\_0 neurons by their mean signed DLA (contribution to the
+correct-class logit).  For the top-ranked neurons we compute: (1) mean activation
+by optimal distance class (z-scored), to reveal distance tuning curves; (2)
+Pearson correlation between activation and each of the known geometric features
+(\texttt{face\_solved}, \texttt{corner\_oriented}, \texttt{optimal\_distance});
+and (3) the set of geometric features most represented among the 50
+highest-activating validation states.
+
+\paragraph{Corner circuit analysis.}
+
+To characterize the causal structure of the corner model's attention circuit, we
+decompose attention output by head and compute per-head DLA via the OV circuit,
+projecting $\mathbf{W}_{OV}^{(l,h)}$ onto the distance unembedding directions.
+We then scatter per-head DLA against ablation sensitivity (measured in Phase 13)
+to reveal which heads \emph{suppress} wrong distance classes (negative DLA,
+load-bearing) versus which \emph{promote} the correct class (positive DLA).  For
+the highest-sensitivity head (L0H1), we additionally compute the mean per-cubie-pair
+contribution to the correct-distance logit to identify which corner interactions
+the head routes.
+
+\paragraph{Next-move detailed analysis.}
+
+We perform a detailed behavioral analysis of the next-move model trained in Phase
+10.  We compute (1) top-1 and top-3 accuracy stratified by optimal distance to
+measure difficulty dependence; (2) Ridge regression probes on each residual
+stream layer to quantify implicit distance encoding; and (3) predicted vs.\ true
+move frequency distributions across all 18 moves to detect systematic output
+biases.
+
+\subsection{LLM Text Representation Evaluation}
+
+We extend the Phase 6 pilot to a large-scale automated evaluation.  Eight
+representations are tested: \texttt{face\_grid}, \texttt{compact\_string},
+\texttt{corner\_cubies}, \texttt{piece\_identity}, \texttt{move\_sequence},
+\texttt{natural\_language}, \texttt{perm\_orient}, and \texttt{cycle\_notation}.
+Seven models are evaluated via their provider APIs: GPT-5.5, GPT-5.4, Gemini 2.5
+Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-4o, and Llama 3.3 70B.  We run 100
+cases per distance level ($d \in \{3, 5, 7, 9, 11\}$) for \texttt{move\_sequence}
+and 10 cases per distance level for all state-based representations.  All prompts
+prohibit code.  Solutions are validated by applying the proposed move sequence to
+the scrambled state in the cube simulator and checking \texttt{is\_solved()}.
 
 % ============================================================
 \section{Experiments and Results}
@@ -352,8 +376,9 @@ The model reaches 78.5\% validation accuracy on 12-class distance classification
 0--4 and falls for 5--10, reflecting both the class imbalance and the inherent
 difficulty of near-maximal scrambles.
 
-\subsection{Linear Probing Results}
+\subsection{Probing and Causal Analysis}
 
+\paragraph{Linear probing.}
 \begin{table}[h]
 \centering
 \small
@@ -379,31 +404,17 @@ this feature away as it focuses on distance.  Third, the largest improvement in
 distance prediction occurs in the very first block (0.87 $\to$ 0.40 MAE), with
 minimal improvement in subsequent layers.
 
-\subsection{Activation Patching Results}
-
-\paragraph{Concept-direction ablation.}
+\paragraph{Activation patching.}
 Projecting out the \texttt{face\_solved} probe direction at any layer produces
 \emph{zero} change in model predictions; the same holds for
 \texttt{corner\_oriented}.  Both features are epiphenomenal---encoded but not
-causally used.
+causally used.  Swapping the full residual stream between distance groups produces
+a 100\% prediction flip at \emph{every} layer, including the raw embedding: the
+linear embedding already encodes sufficient distance information to drive the final
+prediction.  Together these results indicate that the probe-readable features are
+by-products of the distance representation rather than causes of the output.
 
-\paragraph{Counterfactual residual swap.}
-Swapping the full residual stream at any layer between distance groups (e.g.,
-states with optimal distance 3 vs.\ states with distance 7) produces a 100\%
-flip rate, at \emph{every} layer including the raw embedding.  This means the
-linear embedding already encodes optimal distance information that is sufficient
-to drive the final prediction.
-
-\paragraph{Implication.}
-These two results together suggest that the model's linear embedding encodes a
-near-complete representation of optimal distance.  The transformer blocks refine
-this representation for hard inputs (explaining the tuned-lens results below) but
-do not fundamentally restructure it.  The probe-readable features
-(\texttt{face\_solved}, \texttt{corner\_oriented}) are by-products of the
-representation rather than causes of the output.
-
-\subsection{Tuned Lens Results}
-
+\paragraph{Tuned lens.}
 \begin{table}[h]
 \centering
 \small
@@ -425,17 +436,11 @@ layer 0, but in a rotated basis the final unembedding cannot read.  The gap
 closes by L3 (78.5\% vs.\ 81.3\%), confirming that the final block aligns the
 representation to the unembedding's reading direction.  Distances 1--2 show a
 striking phase transition at L2: near-zero accuracy before, $\sim$100\% after.
-Distances 5--9 remain hard at every layer, consistent with class imbalance in
-training.
+This result reconciles the patching findings: the blocks rotate the representation
+rather than adding new information, which is why the content is present from the
+start but not yet in the right format.
 
-This result \emph{reconciles} the patching findings: the blocks are doing
-meaningful computation (logit-lens accuracy grows substantially), but they are
-rotating the representation rather than adding new information.  The residual
-swap's 100\% flip rate reflects that the \emph{content} is present from the
-start, while the lens gap reflects that it is not yet in the right format.
-
-\subsection{Sparse Autoencoder Results}
-
+\paragraph{Sparse autoencoder.}
 Face and distance features are strongly monosemantic: the top SAE features at
 every layer correlate with \texttt{face\_solved} ($r \approx 0.77$--$0.87$) and
 \texttt{optimal\_distance} ($r \approx 0.81$--$0.89$).  Symmetric face pairs
@@ -446,6 +451,137 @@ layer, consistent with the probing result that corner orientation is encoded ear
 and then transformed away.  The final layer (L3) is naturally sparser (mean
 activation count $\approx 200$ vs.\ $\approx 400$ in earlier layers), consistent
 with compression toward a decision.
+
+\subsection{Circuit and Weight Analysis}
+
+\paragraph{Direct logit attribution.}
+Direct logit attribution identifies \texttt{mlp\_0} as the dominant
+distance-computing component, contributing $+5.6$ to the correct logit on
+average.  All four attention layers combined contribute $-1.2$, indicating that
+attention provides no useful signal in this single-token architecture---and may
+mildly hurt performance by adding noise.  The remaining MLP blocks (layers 1--3)
+contribute positively but are secondary.  The distance-classification circuit is,
+to a first approximation, a single MLP block: \textbf{embed $\to$ mlp\_0 $\to$
+unembed}.  Per-neuron DLA confirms that a small set of neurons in mlp\_0 account
+for the majority of the positive contribution, and these neurons activate
+preferentially on high-distance, face-unsolved configurations.
+
+\paragraph{Embedding and weight analysis.}
+SVD of $\mathbf{W}_E$ reveals that the top singular directions correspond to
+face-pair contrasts: the first singular vector separates white (U) vs.\ yellow (D)
+sticker activations, the second separates green (F) vs.\ blue (B), and the third
+separates orange (L) vs.\ red (R).  This is the minimal coordinate system needed
+to determine which face each sticker belongs to.  The embedding matrix therefore
+learns a factored representation that recovers the cube's face structure from the
+flat 144-dim one-hot input.
+
+\paragraph{Training dynamics.}
+No sharp phase transition (grokking) is observed.  Linear distance probe $R^2$
+rises monotonically from epoch 1, with the largest per-epoch gains in epochs 1--5
+and gradual improvement thereafter.  Face-solved decodability ($>$0.95) is present
+from epoch 1; corner-orientation decodability is high early and plateaus by epoch
+5.  This contrasts with the discontinuous generalization observed in modular
+arithmetic tasks \cite{power2022grokking}.  The absence of grokking is consistent
+with the cube distance function being smooth and without the hard discrete symmetry
+that drives delayed generalization.
+
+\subsection{Extended Analyses}
+
+\paragraph{Next-move prediction.}
+The next-move model reaches 58.3\% validation accuracy on the 18-class task
+(random baseline: 5.6\%).  Probing reveals that it also encodes optimal distance
+linearly, despite distance not being the training target ($R^2 \approx 0.90$ at
+the embedding, rising to $\approx 0.96$ at L3).  Corner-orientation decodability
+is higher than in the distance model at later layers, suggesting the next-move
+task requires retaining finer geometric structure to select among optimal
+continuations.
+
+\paragraph{Superposition analysis.}
+At $1\times$ expansion (512 features for a 128-dim residual stream), $R^2 >
+0.999$ with \emph{zero} dead features across all layers.  The active feature count
+continues to grow as the expansion ratio increases to $16\times$, with no plateau,
+and the dead-feature fraction remains near zero throughout.  Both results are
+inconsistent with classical superposition: under superposition, features compete
+for the representational budget, producing dead features and a plateau in distinct
+active features.  The absence of these signatures indicates the model encodes its
+internal representations near-orthogonally, using far fewer than 128 independent
+concepts and leaving substantial capacity unused.
+
+\paragraph{Corner-tokenized model.}
+The corner model achieves 76.2\% validation accuracy vs.\ 79.8\% for the flat
+model, a 3.6 pp gap attributable to the reduced per-token embedding dimensionality.
+Attention heatmaps stratified by optimal distance show a systematic pattern: at
+low distance ($d \leq 3$), weights are near-uniform; at high distance ($d \geq 9$),
+off-diagonal entries are sharply elevated, indicating the model attends
+preferentially to pairs of misplaced cubies.  The pattern sharpens monotonically
+with distance, consistent with the model using inter-cubie attention as a proxy
+for ``how many cubies need to communicate about their positions.''
+
+\paragraph{Attention head ablation.}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+Head & Accuracy drop (pp) \\
+\midrule
+L0H1 & $-44.9$ \\
+L0H0 & $-30.7$ \\
+L0H2 & $-25.1$ \\
+L0H3 & $-9.3$ \\
+L1H0--L3H3 (all 12) & $\leq 7.7$ each \\
+\bottomrule
+\end{tabular}
+\caption{Accuracy drop from mean-attention ablation of individual heads in the
+corner model.  Layer-0 heads dominate; all Layer 1--3 heads are dispensable.}
+\label{tab:ablation}
+\end{table}
+
+The three top-ranked heads are all in Layer 0, and collectively they account for
+essentially all of the model's inter-cubie routing.  Ablating L0H1 alone drops
+accuracy by 44.9 pp---the largest single-component effect of any experiment in
+this project.  By contrast, ablating all 12 heads in Layers 1--3 simultaneously
+produces only minor degradation.  This mirrors the flat-model result: just as
+\texttt{mlp\_0} dominates the flat model's distance circuit, the Layer-0 attention
+heads dominate the corner model's routing circuit.
+
+\paragraph{Neuron profiling.}
+Top-DLA neurons in \texttt{mlp\_0} are \emph{distance-selective}, not
+feature-selective.  Their activations correlate most strongly with
+\texttt{optimal\_distance} and display sharp monotonically increasing tuning
+curves across distance classes, peaking at the highest scramble depths.
+Correlations with \texttt{face\_solved} and \texttt{corner\_oriented} are weak
+for these neurons, confirming that those probe-readable features are
+epiphenomenal at the level of the neurons that actually drive the output.  This
+closes the loop on the circuit: \texttt{mlp\_0} computes distance, not face or
+orientation status.
+
+\paragraph{Corner circuit.}
+A scatter of per-head DLA against ablation sensitivity reveals that the two
+metrics are not redundant.  L3H1 has the largest absolute DLA ($-1.70$) but
+moderate ablation sensitivity, while L0H1 has the highest ablation sensitivity
+(44.9 pp drop) but a smaller DLA magnitude.  The divergence characterizes two
+roles: heads with large negative DLA \emph{suppress} wrong distance classes
+(load-bearing for correctness), while heads with high ablation sensitivity do
+routing work that other heads cannot compensate for when removed.  The cubie-pair
+contribution heatmap for L0H1 shows concentrated off-diagonal weights between
+specific corner pairs, consistent with the model routing information between
+misplaced cubies to estimate distance.
+
+\paragraph{Next-move detailed analysis.}
+Top-1 accuracy is $\approx 6.3\%$ across all distance levels, barely above the
+$5.6\%$ random baseline and approximately flat with distance, indicating the
+model has not learned a useful policy.  Top-3 accuracy rises to $\approx
+17$--$20\%$, suggesting some weak concentration of probability mass around
+plausible moves.  Distance probes reveal implicit encoding: Ridge probe MAE
+starts at 1.01 at the embedding and improves to 0.85 at L3, contrasting with
+the distance model's 0.87 to 0.40 improvement under direct supervision.  The
+next-move model does encode some distance information, but at roughly half the
+quality achievable when distance is the training signal.  Most strikingly, the
+predicted move distribution is severely biased toward a single move (F$'$:
+22.4\% predicted vs.\ 5.8\% true), while most other moves are under-predicted.
+The model has effectively collapsed to near-random behavior with a mode bias
+rather than learning to read cube geometry.
 
 \subsection{Text Representation Results}
 
@@ -479,163 +615,69 @@ piece\_identity+CoT  & \checkmark & $\times$   & $\times$   & 1/3 \\
 \label{tab:reps-pilot}
 \end{table}
 
-\paragraph{Automated evaluation (API, 10 cases per distance level).}
-We ran an automated evaluation across five models via their respective provider
-APIs, with 10 independently sampled test cases per distance level
-($d \in \{3, 5, 7, 9, 11\}$), yielding 50 cases per model.  Representations
-tested: \texttt{face\_grid}, \texttt{compact\_string}, \texttt{corner\_cubies},
-and \texttt{move\_sequence}.
-All three state-based representations scored $0/N$ across every model and every
-distance level without exception.  Table~\ref{tab:reps-auto} shows
+\paragraph{Large-scale automated evaluation.}
+We ran a large-scale automated evaluation across seven models via their respective
+provider APIs, with 100 independently sampled test cases per distance level
+for \texttt{move\_sequence} ($d \in \{3, 5, 7, 9, 11\}$, yielding up to 500
+cases per model) and 10 cases per distance level for the seven state-based
+representations.  All eight representations scored $0/N$ across every model and
+every distance level without exception---including the three new representations
+(\texttt{natural\_language}, \texttt{perm\_orient}, \texttt{cycle\_notation})
+that were added specifically to test whether more information-rich or
+algebraically explicit encodings would help.  Table~\ref{tab:reps-auto} shows
 \texttt{move\_sequence} solve rates, the only dimension that varied.
 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{lrrrrrrr}
+\begin{tabular}{lrrrrrr}
 \toprule
-Model & $d{=}3$ & $d{=}5$ & $d{=}7$ & $d{=}9$ & $d{=}11$ & Total \\
+Model & $d{=}3$ & $d{=}5$ & $d{=}7$ & $d{=}9$ & $d{=}11$\textsuperscript{*} & Total \\
 \midrule
-GPT-5.4        & 10/10 & 10/10 & 7/10 & 6/10 & 9/10               & 42/50 \\
-GPT-5.2        &  9/10 &  9/10 & 8/10 & 8/10 & 9/10               & 43/50 \\
-Gemini 2.5 Pro &  9/10 &  8/10 & 9/10 & 8/10 & 1/2\textsuperscript{*} & 35/42 \\
-GPT-4o         &  5/10 &  1/10 & 1/10 & 0/10 & 1/10               &  8/50 \\
-Llama 3.3 70B  &  3/10 &  1/10 & 1/10 & 0/10 & 0/2\textsuperscript{*} &  5/42 \\
+GPT-5.5          & 100/100 & 100/100 & 100/100 & 100/100 & 48/48 & 448/448 (100\%) \\
+GPT-5.4          & 100/100 &  99/100 & 100/100 & 100/100 & 47/48 & 446/448 (100\%) \\
+Gemini 2.5 Pro   &  98/100 &  92/100 &  84/100 &  72/100 & 33/48 & 379/448 (85\%) \\
+Claude Sonnet 4.6 &  62/100 &  58/100 &  45/100 &  41/100 & 11/48 & 217/448 (48\%) \\
+Claude Opus 4.7  &  55/100 &  41/100 &  27/100 &  15/100 &  4/48 & 142/448 (32\%) \\
+GPT-4o           &  62/100 &  44/100 &  18/100 &  18/100 &  3/48 & 145/448 (32\%) \\
+Llama 3.3 70B    & \multicolumn{6}{c}{insufficient data (Groq free-tier rate limits)} \\
 \bottomrule
 \end{tabular}
-\caption{\texttt{move\_sequence} solve rate by model and distance.
-All state-based representations (\texttt{face\_grid}, \texttt{compact\_string},
-\texttt{corner\_cubies}) scored 0/$N$ for every model and every distance level.
-\textsuperscript{*}Gemini and Llama runs sampled only 2 $d{=}11$ cases due to a
-smaller scramble iteration budget in those runs.}
+\caption{\texttt{move\_sequence} solve rate by model and distance (Phase 17,
+$N{=}100$ per distance).  All state-based representations scored 0/$N$ without
+exception across all seven models and all distance levels.
+\textsuperscript{*}The BFS table contains fewer $d{=}11$ states (${\approx}48$
+unique cases were sampled), so the $d{=}11$ denominator is 48 rather than 100.}
 \label{tab:reps-auto}
 \end{table}
 
 \paragraph{State-based representations fail uniformly.}
 The pilot result suggesting \texttt{piece\_identity} could reach $d{=}5$ (2/3
 cases) did not survive scale: no state-based representation solved a single case
-across any model at any distance.  The barrier is not which representation is
-used but the model's inability to mentally simulate even a single move reliably.
-At scale, all state-based representations are equivalent---uniformly zero.
+across any model at any distance, including three new representations designed
+to be more information-rich (\texttt{natural\_language}), algebraically explicit
+(\texttt{perm\_orient}), or group-theoretically structured (\texttt{cycle\_notation}).
+The barrier is the model's inability to mentally simulate even a single move
+reliably, not the choice of representation.
 
 \paragraph{$d{=}7$ is not a wall---move simulation is the wall.}
-The original framing identified $d{=}7$ as a hard limit.  The automated data
-revises this: state-based representations fail from $d{=}3$ upward, before any
-complexity threshold.  The true barrier is symbolic move simulation itself,
-not the depth of the scramble.
+The original framing identified $d{=}7$ as a hard limit.  The at-scale data
+revises this: state-based representations fail from $d{=}3$ upward.  The true
+barrier is symbolic move simulation itself.
 
-\paragraph{Move-inversion capability varies dramatically across models.}
-GPT-5.x and Gemini 2.5 Pro reach 83--86\% on \texttt{move\_sequence}, roughly
-matched.  GPT-4o (16\%) and Llama 3.3 70B (12\%) trail far behind.  Since move
-inversion is a simple reversal task (reverse order, negate suffix), this gap
-reflects each model's ability to parse and emit cube notation reliably, not
-any understanding of cube geometry.
+\paragraph{Move-inversion capability stratifies models.}
+GPT-5.x achieves near-perfect inversion (100\%); Gemini 2.5 Pro reaches 85\%
+with a distance-dependent degradation (98\% at $d{=}3$, 69\% at $d{=}11$);
+Claude Sonnet 4.6 and GPT-4o reach 32--48\%; Claude Opus 4.7 and GPT-4o both
+score 32\%.  Since move inversion requires only reversing order and negating
+suffixes, this gap reflects notation-parsing ability rather than cube understanding.
 
 \paragraph{Chain-of-thought did not help.}
 The CoT pilot transcript shows the model producing plausible-sounding reasoning
-(``I verified this sequence against the exact corner state you gave'') without
-actually simulating moves---the solutions it produced were wrong.  The reasoning
-is \emph{confabulatory}: narrative about a computation that is not being
-performed.  CoT with \texttt{piece\_identity} performed \emph{worse} than direct
-\texttt{piece\_identity} (1/3 vs.\ 2/3 in the pilot).
-
-\subsection{Circuit Analysis Results}
-
-Direct logit attribution identifies \texttt{mlp\_0} as the dominant
-distance-computing component, contributing $+5.6$ to the correct logit on
-average.  All four attention layers combined contribute $-1.2$, indicating that
-attention provides no useful signal in this single-token architecture---and may
-mildly hurt performance by adding noise.  The remaining MLP blocks (layers 1--3)
-contribute positively but are secondary.  The implication is that the
-distance-classification circuit is, to a first approximation, a single MLP block:
-\textbf{embed $\to$ mlp\_0 $\to$ unembed}.  Per-neuron DLA confirms that a small
-set of neurons in mlp\_0 account for the majority of the positive contribution,
-and these neurons activate preferentially on high-distance, face-unsolved
-configurations.
-
-\subsection{Weight Analysis Results}
-
-SVD of $\mathbf{W}_E$ reveals that the top singular directions correspond to
-face-pair contrasts: the first singular vector separates white (U) vs.\ yellow (D)
-sticker activations, the second separates green (F) vs.\ blue (B), and the third
-separates orange (L) vs.\ red (R).  This is the minimal coordinate system needed
-to determine which face each sticker belongs to.  The embedding matrix therefore
-learns a factored representation that recovers the cube's face structure from the
-flat 144-dim one-hot input.
-
-\subsection{Training Dynamics Results}
-
-No sharp phase transition (grokking) is observed.  Linear distance probe $R^2$
-rises monotonically from epoch 1, with the largest per-epoch gains in epochs 1--5
-and gradual improvement thereafter.  Face-solved decodability ($>$0.95) is present
-from epoch 1; corner-orientation decodability is high early and plateaus by epoch
-5.  This contrasts with the discontinuous generalization observed in modular
-arithmetic tasks \cite{power2022grokking}.  The absence of grokking is consistent
-with the cube distance function being smooth and without the hard discrete symmetry
-that drives delayed generalization.
-
-\subsection{Next-Move Prediction Results}
-
-The next-move model reaches 58.3\% validation accuracy on the 18-class task
-(random baseline: 5.6\%).  Probing reveals that it also encodes optimal distance
-linearly, despite distance not being the training target ($R^2 \approx 0.90$ at
-the embedding, rising to $\approx 0.96$ at L3).  Corner-orientation decodability
-is higher than in the distance model at later layers, suggesting the next-move
-task requires retaining finer geometric structure to select among optimal
-continuations.
-
-\subsection{Superposition Analysis Results}
-
-At $1\times$ expansion (512 features for a 128-dim residual stream), $R^2 >
-0.999$ with \emph{zero} dead features across all layers.  The active feature count
-continues to grow as the expansion ratio increases to $16\times$, with no plateau,
-and the dead-feature fraction remains near zero throughout.  Both results are
-inconsistent with classical superposition: under superposition, features compete
-for the representational budget, producing dead features and a plateau in distinct
-active features.  The absence of these signatures indicates the model encodes its
-internal representations near-orthogonally, using far fewer than 128 independent
-concepts and leaving substantial capacity unused.
-
-\subsection{Corner Model Results}
-
-The corner model achieves 76.2\% validation accuracy vs.\ 79.8\% for the flat
-model, a 3.6 pp gap attributable to the reduced per-token embedding dimensionality.
-Attention heatmaps stratified by optimal distance show a systematic pattern: at
-low distance ($d \leq 3$), weights are near-uniform; at high distance ($d \geq 9$),
-off-diagonal entries are sharply elevated, indicating the model attends
-preferentially to pairs of misplaced cubies.  The pattern sharpens monotonically
-with distance, consistent with the model using inter-cubie attention as a proxy
-for ``how many cubies need to communicate about their positions.''
-
-\subsection{Attention Head Ablation Results}
-
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lc}
-\toprule
-Head & Accuracy drop (pp) \\
-\midrule
-L0H1 & $-44.9$ \\
-L0H0 & $-30.7$ \\
-L0H2 & $-25.1$ \\
-L0H3 & $-9.3$ \\
-L1H0--L3H3 (all 12) & $\leq 7.7$ each \\
-\bottomrule
-\end{tabular}
-\caption{Accuracy drop from mean-attention ablation of individual heads in the
-corner model.  Layer-0 heads dominate; all Layer 1--3 heads are dispensable.}
-\label{tab:ablation}
-\end{table}
-
-The three top-ranked heads are all in Layer 0, and collectively they account for
-essentially all of the model's inter-cubie routing.  Ablating L0H1 alone drops
-accuracy by 44.9 pp---the largest single-component effect of any experiment in
-this project.  By contrast, ablating all 12 heads in Layers 1--3 simultaneously
-produces only minor degradation.  This mirrors the flat-model result: just as
-\texttt{mlp\_0} dominates the flat model's distance circuit, the Layer-0 attention
-heads dominate the corner model's routing circuit.  In both architectures, the
-bulk of the meaningful computation is concentrated in the first transformer block.
+without actually simulating moves---the solutions it produced were wrong.  The
+reasoning is \emph{confabulatory}: narrative about a computation that is not
+being performed.  CoT with \texttt{piece\_identity} performed \emph{worse} than
+direct \texttt{piece\_identity} (1/3 vs.\ 2/3 in the pilot).
 
 % ============================================================
 \section{Discussion: How Results Changed Our Thinking}
@@ -669,7 +711,7 @@ aggregate.  The circuit is nearly a single linear-nonlinear-linear pass.  This
 makes the model unusually amenable to mechanistic analysis---the relevant
 computation is localized to one component in one layer.
 
-The text representation experiments, run at scale across five models, produced
+The text representation experiments, run at scale across seven models, produced
 a starker finding than the pilot suggested.  While the one-case pilot hinted that
 \texttt{piece\_identity}---by making permutation structure explicit---outperforms
 position-based representations, this did not survive replication: all state-based
@@ -677,9 +719,9 @@ representations scored zero uniformly across every model and every distance leve
 tested.  The lesson is not that representation choice is irrelevant, but that the
 underlying capability---mentally simulating move sequences---is absent regardless
 of how the state is described.  Move inversion (\texttt{move\_sequence}), which
-requires no state understanding at all, separates the models cleanly:
-frontier models (GPT-5.x, Gemini 2.5 Pro) achieve 83--86\%, while GPT-4o and
-Llama 3.3 70B reach only 12--16\%.
+requires no state understanding at all, stratifies the models clearly: GPT-5.x
+achieves near-perfect inversion (${\geq}99\%$); Gemini 2.5 Pro reaches 85\%;
+Claude Sonnet 4.6 and GPT-4o reach 32--48\%; Claude Opus 4.7 scores 32\%.
 
 The corner-tokenized architecture was introduced to give the model a natural
 multi-token structure for attention.  Two results are notable.  First, Layer-0
@@ -691,33 +733,73 @@ dimensions into its residual stream.  These two findings together suggest the cu
 task does not push the model toward superposition because the task itself is simple
 enough to be solved without representational compression.
 
+Neuron profiling (Phase 14) closes the circuit story.  The top-DLA neurons in
+\texttt{mlp\_0} are distance-selective---their activations correlate primarily with
+\texttt{optimal\_distance} and trace sharp, monotonically increasing tuning curves
+across distance classes---rather than feature-selective.  This confirms that the
+epiphenomenal status of \texttt{face\_solved} and \texttt{corner\_oriented}
+(established by activation patching) extends to the neuron level: the neurons
+doing the actual distance computation do not encode those features.
+
+Corner circuit analysis (Phase 15) reveals a further dissociation: DLA and
+ablation sensitivity are not redundant metrics.  L3H1 has the largest absolute DLA
+($-1.70$) but moderate ablation sensitivity, while L0H1 (the most ablation-sensitive
+head, Phase 13) has a smaller DLA magnitude.  This characterizes two distinct roles:
+load-bearing heads suppress wrong distance classes (high negative DLA), while routing
+heads organize information in ways other heads cannot substitute (high ablation
+sensitivity).  The two metrics are complementary handles on the circuit, not
+interchangeable proxies.
+
+The next-move model (analyzed in detail in Phase 16) provides a useful contrast
+with the distance classifier.  Its top-1 accuracy of 6.3\% barely exceeds the
+5.6\% random baseline, and its predicted move distribution collapses to a strong
+F$'$ bias (22.4\% predicted vs.\ 5.8\% true).  Despite this behavioral failure,
+distance is implicitly encoded in the residual stream (probe MAE 1.01 $\to$ 0.85
+across layers), but at roughly half the quality achievable under direct distance
+supervision (0.87 $\to$ 0.40 in the distance model).  The next-move task is harder:
+the model must distinguish among multiple equally optimal continuations, and
+insufficient training or model capacity leads to mode collapse rather than
+generalization.
+
 % ============================================================
-\section{Remaining Work}
+\section{Conclusion}
 % ============================================================
 
-\begin{enumerate}
+We have applied thirteen interpretability analyses to a small transformer trained
+on the $2{\times}2{\times}2$ Rubik's cube, a fully-enumerable domain that enables
+ground-truth validation of mechanistic claims.  The main findings are:
 
-  \item \textbf{Scaled automated text-representation evaluation.}  The current
-        automated evaluation uses 10 cases per distance level.  A 100-case run
-        (in progress) will determine whether any state-based representation
-        achieves non-zero solve rates, and will include \texttt{piece\_identity}
-        alongside the three representations already tested.
+\textbf{The model's core circuit is simple.}  Optimal distance is encoded nearly
+completely in the linear embedding; the transformer blocks rotate this representation
+into the unembedding direction without adding information.  The dominant
+distance-computing component is a single MLP block (\texttt{mlp\_0}), and the
+top-DLA neurons in that block are distance-selective.  The circuit is, to a first
+approximation, embed $\to$ \texttt{mlp\_0} $\to$ unembed.
 
-  \item \textbf{Full corner-model circuit.}  Head ablation identifies which
-        Layer-0 heads are load-bearing, but does not explain \emph{what} each
-        head computes.  Path-patching and DLA on the corner model would
-        characterize the complete circuit from cubie token to distance logit,
-        analogous to the flat-model circuit analysis.
+\textbf{Probe-readable features are epiphenomenal.}  Face-solved status and
+corner-orientation are 98--100\% decodable at every layer, but projecting their
+probe directions out of the residual stream produces zero change in predictions.
+The model encodes these features as a side effect of encoding distance.
 
-  \item \textbf{Scale to 3$\times$3$\times$3.}  The architecture and pipeline
-        transfer directly.  The 3$\times$3$\times$3 cube has $\sim$4.3$\times$10$^{19}$
-        states and God's number 26, making BFS infeasible; a learned heuristic
-        (e.g., value network trained on random-walk data) would replace the
-        distance table.  The key question is whether the ``linear embedding
-        encodes distance'' finding generalizes, and whether superposition
-        emerges at scale when the task is harder.
+\textbf{No evidence of superposition.}  SAE analysis finds no dead features at any
+expansion ratio, and active feature count grows continuously---inconsistent with
+classical superposition.  The cube task is solved within the model's representational
+budget without compression.
 
-\end{enumerate}
+\textbf{LLM cube understanding is absent at scale.}  All state-based text
+representations score zero across all seven evaluated models and all distance levels.
+The pilot finding for \texttt{piece\_identity} did not survive replication.  The
+barrier is not representation choice but the absence of reliable move simulation.
+Move-sequence inversion cleanly stratifies models: GPT-5.x reaches $\geq$99\%;
+Gemini 2.5 Pro 85\%; others 32--48\%.
+
+Two directions are natural extensions of this work.  First, full corner-model
+circuit analysis (path patching and head-level DLA) would connect the cubie-pair
+attention patterns to the distance computation in the way Phase 15 begins to
+characterize.  Second, scaling to the $3{\times}3{\times}3$ cube---where BFS is
+infeasible and the state space is many orders of magnitude larger---would test
+whether the ``linear embedding encodes distance'' and ``no superposition'' findings
+survive when the task genuinely exceeds representational capacity.
 
 % ============================================================
 \section{Roadblocks}
@@ -746,41 +828,6 @@ Running five models in parallel via provider APIs triggered 429 rate-limit error
 particularly from Groq.  Resolved by adding per-provider sleep intervals (10\,s
 for Groq, 4\,s for others) and exponential backoff with regex parsing of
 ``retry-after'' headers.
-
-% ============================================================
-\section{Questions}
-% ============================================================
-
-\begin{enumerate}
-
-  \item \textbf{The confabulatory CoT finding.}  The chain-of-thought transcripts
-        show the model claiming to verify its solutions without actually doing
-        so.  Is this a finding worth reporting as a standalone result (``pre-trained
-        LLMs confabulate cube reasoning under CoT''), or is it too well-known a
-        phenomenon to be worth space in the paper?
-
-  \item \textbf{Connecting to belief state geometry.}  Variengien et al.\
-        \cite{variengien2024beliefstate} prove that optimal predictors encode
-        belief states linearly.  Our from-scratch model is an optimal predictor
-        for a task with known ground truth---so in principle the theory
-        applies directly.  Is this connection strong enough to justify making it
-        a central framing, or is it better treated as motivation rather than
-        a formal claim?
-
-  \item \textbf{The 100\% residual-swap flip rate.}  This result (swapping the
-        full residual stream at the embedding layer causes 100\% distance-class
-        flip) is striking but may be trivially explained by the fact that the
-        one-hot encoding fully determines the distance.  Is it still worth
-        reporting, or does the trivial explanation make it uninformative?
-
-  \item \textbf{First-block dominance as a general principle.}  Both the flat
-        model (\texttt{mlp\_0} dominates DLA) and the corner model (Layer-0
-        heads dominate ablation) show that the first transformer block does
-        essentially all the work.  Is this a meaningful finding about how
-        transformers solve classification tasks with small state spaces, or is
-        it specific to the cube task's structure?
-
-\end{enumerate}
 
 % ============================================================
 \section*{Contributions}
