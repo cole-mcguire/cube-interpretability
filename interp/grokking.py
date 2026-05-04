@@ -309,7 +309,7 @@ NAV_BODY = """\
         <a href="corner_attn_results.html">Phase 13 — Head Ablation</a>
       </div>
     </div>
-    <a href="progress_report.pdf">Progress Report ↗</a>
+    <a href="progress_report.pdf">Final Report ↗</a>
   </nav>
 </header>"""
 PAGE_DESCRIPTION = """\

@@ -436,7 +436,7 @@ NAV_BODY = """\
         <a href="llm_eval_results.html">Phase 17 — LLM Eval</a>
       </div>
     </div>
-    <a href="progress_report.pdf">Progress Report &#8599;</a>
+    <a href="progress_report.pdf">Final Report &#8599;</a>
   </nav>
 </header>"""
 
