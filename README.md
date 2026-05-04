@@ -7,7 +7,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 
 **Website:** [cole-mcguire.github.io/cube-interpretability](https://cole-mcguire.github.io/cube-interpretability)
 
-**Progress report:** [`docs/progress_report.pdf`](docs/progress_report.pdf) (source: [`docs/progress_report.tex`](docs/progress_report.tex)).
+**Final report:** [`docs/progress_report.pdf`](docs/progress_report.pdf) (source: [`docs/progress_report.tex`](docs/progress_report.tex)).
 
 ## What this project does
 
@@ -100,8 +100,8 @@ cube-interpretability/
 │   ├── superposition_results.html Phase 11 — SAE expansion sweep results
 │   ├── corner_results.html Phase 12 — corner-tokenized model results
 │   ├── corner_attn_results.html Phase 13 — head ablation and specialization
-│   ├── progress_report.tex Full progress report (LaTeX)
-│   ├── progress_report.pdf Compiled PDF (11 pages)
+│   ├── progress_report.tex Full final report (LaTeX)
+│   ├── progress_report.pdf Compiled PDF (17 pages)
 │   ├── references.bib      Bibliography
 │   └── proposal.tex        Original project proposal
 │
