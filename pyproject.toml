@@ -16,6 +16,7 @@ dependencies = [
     "openai>=1.0.0",
     "onnxscript>=0.7.0",
     "onnx>=1.21.0",
+    "matplotlib>=3.10.9",
 ]
 
 [project.scripts]

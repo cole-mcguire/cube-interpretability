@@ -13,6 +13,7 @@
 \usepackage{amssymb}
 \setstretch{1.05}
 \hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\graphicspath{{figures/}}
 
 \title{Interpreting Transformer Representations on Rubik's Cube Tasks\\
 \large Final Report}
@@ -510,12 +511,24 @@ concepts and leaving substantial capacity unused.
 \paragraph{Corner-tokenized model.}
 The corner model achieves 76.2\% validation accuracy vs.\ 79.8\% for the flat
 model, a 3.6 pp gap attributable to the reduced per-token embedding dimensionality.
-Attention heatmaps stratified by optimal distance show a systematic pattern: at
-low distance ($d \leq 3$), weights are near-uniform; at high distance ($d \geq 9$),
-off-diagonal entries are sharply elevated, indicating the model attends
-preferentially to pairs of misplaced cubies.  The pattern sharpens monotonically
-with distance, consistent with the model using inter-cubie attention as a proxy
-for ``how many cubies need to communicate about their positions.''
+Figure~\ref{fig:attn} shows the mean attention weights for head L0H1 (the most
+ablation-sensitive head) stratified by optimal distance.  At $d{=}1$ the weights
+are near-uniform (${\approx}1/8$ per key), consistent with a cube that is almost
+solved and where every cubie is equally relevant.  By $d{=}10$ the weights
+concentrate sharply on specific off-diagonal pairs, indicating the head attends
+preferentially to pairs of misplaced cubies.  The sharpening is monotonic with
+distance, consistent with the model using inter-cubie attention as a proxy for
+how many cubies need to exchange information.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{fig_attn_heatmap}
+\caption{Mean attention weights for L0H1 at four distance levels ($d{=}1, 4, 7,
+10$).  Rows = query cubie; columns = key cubie.  At low distance the pattern is
+nearly uniform; at high distance the model concentrates attention on specific
+off-diagonal cubie pairs, reflecting misplacement structure.}
+\label{fig:attn}
+\end{figure}
 
 \paragraph{Attention head ablation.}
 \begin{table}[h]
@@ -547,26 +560,49 @@ heads dominate the corner model's routing circuit.
 
 \paragraph{Neuron profiling.}
 Top-DLA neurons in \texttt{mlp\_0} are \emph{distance-selective}, not
-feature-selective.  Their activations correlate most strongly with
-\texttt{optimal\_distance} and display sharp monotonically increasing tuning
-curves across distance classes, peaking at the highest scramble depths.
-Correlations with \texttt{face\_solved} and \texttt{corner\_oriented} are weak
-for these neurons, confirming that those probe-readable features are
-epiphenomenal at the level of the neurons that actually drive the output.  This
-closes the loop on the circuit: \texttt{mlp\_0} computes distance, not face or
-orientation status.
+feature-selective.  Figure~\ref{fig:neuron} shows the mean activation of the
+top-10 DLA neurons across distance classes (z-scored per neuron).  Every neuron
+displays a monotonically increasing tuning curve, peaking at the highest scramble
+depths.  Correlations with \texttt{face\_solved} and \texttt{corner\_oriented}
+are weak, confirming that those probe-readable features are epiphenomenal at the
+neuron level: the neurons that drive the output are tracking distance, not face or
+corner status.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\columnwidth]{fig_neuron_tuning}
+\caption{Mean activation of the top-10 \texttt{mlp\_0} neurons by optimal
+distance, z-scored per neuron.  Red = high activation; blue = low.  All neurons
+are monotonically tuned to distance, confirming that \texttt{mlp\_0} computes
+distance rather than geometric features such as face-solved or corner-oriented
+status.}
+\label{fig:neuron}
+\end{figure}
 
 \paragraph{Corner circuit.}
-A scatter of per-head DLA against ablation sensitivity reveals that the two
-metrics are not redundant.  L3H1 has the largest absolute DLA ($-1.70$) but
-moderate ablation sensitivity, while L0H1 has the highest ablation sensitivity
-(44.9 pp drop) but a smaller DLA magnitude.  The divergence characterizes two
-roles: heads with large negative DLA \emph{suppress} wrong distance classes
-(load-bearing for correctness), while heads with high ablation sensitivity do
-routing work that other heads cannot compensate for when removed.  The cubie-pair
-contribution heatmap for L0H1 shows concentrated off-diagonal weights between
-specific corner pairs, consistent with the model routing information between
-misplaced cubies to estimate distance.
+Figure~\ref{fig:scatter} scatters per-head DLA against ablation sensitivity.
+The two metrics are not redundant: L3H1 has the largest absolute DLA ($-1.70$,
+far left) but only moderate ablation sensitivity, while L0H1 has the highest
+ablation sensitivity (44.9 pp drop) but a smaller DLA magnitude.  This
+divergence identifies two distinct functional roles.  Heads with large negative
+DLA \emph{suppress} wrong distance classes---they actively oppose incorrect
+logits and are load-bearing for correctness.  Heads with high ablation
+sensitivity do \emph{routing} work that other heads cannot substitute when
+removed: ablating L0H1 collapses accuracy by nearly half, even though its
+direct logit vote is modest.  The cubie-pair contribution analysis for L0H1
+shows concentrated off-diagonal weights between specific corner pairs, consistent
+with the head routing information between misplaced cubies so that downstream
+components can estimate distance.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.72\columnwidth]{fig_dla_ablation}
+\caption{Per-head DLA vs.\ accuracy drop from mean-attention ablation.
+L0H1 (red) has the highest ablation sensitivity despite modest DLA, marking it
+as a routing head; L3H1 (blue) has the largest negative DLA, marking it as a
+suppression head.  The two metrics identify complementary roles in the circuit.}
+\label{fig:scatter}
+\end{figure}
 
 \paragraph{Next-move detailed analysis.}
 Top-1 accuracy is $\approx 6.3\%$ across all distance levels, barely above the
@@ -805,29 +841,20 @@ survive when the task genuinely exceeds representational capacity.
 \section{Roadblocks}
 % ============================================================
 
-\paragraph{Venv corruption.}
-Bumping the package version from 0.1.0 to 0.2.0 without deleting the old
-\texttt{.venv} first caused a missing RECORD file warning and an incomplete
-install.  Resolved by deleting and recreating the environment.
-
 \paragraph{BFS orientation bias.}
 The initial BFS was seeded from a single solved state, so the solver treated the
-23 other valid orientations as non-solved.  Solved by seeding from all 24
+23 other valid orientations as non-solved, inflating distance estimates for
+correctly-oriented but physically solved cubes.  Fixed by seeding from all 24
 rotationally equivalent solved states; the regenerated distance table confirms
-24 states at distance 0.
+24 states at distance 0.  All probing and circuit analyses use the corrected table.
 
-\paragraph{Installed-wheel path resolution.}
-When installed as a wheel, \texttt{\_\_file\_\_} resolves to
-\texttt{site-packages}, not the project root, causing the visualizer's solver
-panel to fail to locate \texttt{data/distances\_cache.pkl}.  Fixed by adding a
-\texttt{\_find\_project\_root()} function that walks up from \texttt{os.getcwd()}
-looking for \texttt{pyproject.toml}.
-
-\paragraph{Rate limiting in parallel API evaluation.}
-Running five models in parallel via provider APIs triggered 429 rate-limit errors,
-particularly from Groq.  Resolved by adding per-provider sleep intervals (10\,s
-for Groq, 4\,s for others) and exponential backoff with regex parsing of
-``retry-after'' headers.
+\paragraph{API rate limiting.}
+Running several models in parallel via provider APIs triggered 429 rate-limit
+errors, particularly from Groq (Llama 3.3 70B).  Resolved by adding
+per-provider sleep intervals (10\,s for Groq, 4\,s for others) and exponential
+backoff with ``retry-after'' header parsing.  Groq's free-tier limits remained
+too restrictive for the full $N{=}100$ run, which is why Llama 3.3 70B appears
+with insufficient data in Table~\ref{tab:reps-auto}.
 
 % ============================================================
 \section*{Contributions}

@@ -294,12 +294,9 @@ def write_page(figs: list, out_path: Path) -> None:
         + NAV_CSS + "\n"
         + "<title>Phase 12 — Corner Model</title>\n"
         "</head>\n<body>\n"
-        + NAV_BODY + "
-"
-        + PAGE_DESCRIPTION + "
-"
-        + "
-".join(divs) + "\n"
+        + NAV_BODY + "\n"
+        + PAGE_DESCRIPTION + "\n"
+        + "\n".join(divs) + "\n"
         + "</body>\n</html>\n"
     )
     out_path.write_text(html, encoding="utf-8")
