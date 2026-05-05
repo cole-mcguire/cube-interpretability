@@ -296,7 +296,7 @@ We compare A* against Dijkstra's algorithm ($h \equiv 0$), which is equivalent
 to BFS on an unweighted graph and always finds an optimal solution but expands
 states in order of $g$ only. Both algorithms share the same node limit of
 10,000 expanded states per search; a search that exceeds the limit is counted
-as a failure. Successor generation applies each of the 18 quarter-, half-, and inverse-quarter-turn face moves to the
+as a failure. Successor generation applies each of the 18 face moves (6 faces $\times$ 3 turns: quarter-turn, counter-quarter-turn, half-turn) to the
 current state, and the heuristic is evaluated in batches of 18 via the model.
 We run 20 test cases per distance $d \in \{1, \ldots, 10\}$, sampled from the
 validation set; solution optimality is verified by comparing the returned
@@ -354,7 +354,7 @@ $\eta_0 = 10^{-3}$.
   \caption{Validation accuracy (left) and loss (right) over 30 training epochs
     for AdamW, Adam, and SGD with momentum, all under cosine annealing.
     Mean $\pm$ std over 3 seeds: AdamW $78.3\!\pm\!1.0$\%, Adam
-    $78.9\!\pm\!0.2$\%, SGD $74.4\!\pm\!0.0$\%.}
+    $78.9\!\pm\!0.2$\%, SGD $74.4$\% (std $<$0.1~pp).}
   \label{fig:optimizer}
 \end{figure}
 
@@ -373,7 +373,7 @@ seeds are not sufficient to draw a strong conclusion; AdamW's higher spread
 could reflect the interaction between decoupled weight decay and random
 initialization.
 Both adaptive methods leave SGD well behind: SGD reaches only 74.4\%---a
-$\sim$4.5~pp deficit---with essentially zero variance across seeds ($\pm$0.0~pp),
+$\sim$4.5~pp deficit---with essentially zero variance across seeds (std $<$0.1~pp),
 indicating it converges reliably but to a shallower minimum.
 
 The advantage of adaptive methods over SGD most likely stems from the
@@ -436,7 +436,7 @@ choice is the more impactful decision for this task.
     \multicolumn{5}{l}{\textit{Optimizer comparison (cosine annealing)}} \\
     AdamW & 78.1\% & 79.7\% & 77.1\% & $78.3 \pm 1.0$\,pp \\
     Adam  & 79.1\% & 78.8\% & 78.6\% & $78.9 \pm 0.2$\,pp \\
-    SGD   & 74.4\% & 74.4\% & 74.4\% & $74.4 \pm 0.0$\,pp \\
+    SGD   & 74.4\% & 74.4\% & 74.4\% & $74.4$\% (std $<$0.1\,pp) \\
     \midrule
     \multicolumn{5}{l}{\textit{Schedule ablation (AdamW)}} \\
     Cosine   & 78.1\% & 79.7\% & 77.1\% & $78.3 \pm 1.0$\,pp \\
@@ -490,7 +490,7 @@ from a good basin center as toward it.
 \subsection{Learned Heuristic Quality}
 \label{sec:heuristic}
 
-Using the AdamW + cosine model (best configuration from
+Using the AdamW + cosine model (default configuration from
 Sections~\ref{sec:optimizer}--\ref{sec:schedule}), we evaluate heuristic
 quality across the 30k validation examples. Table~\ref{tab:heuristic} and
 Figure~\ref{fig:heuristic} summarize per-distance performance.
@@ -670,7 +670,7 @@ hyperparameter choices rather than to confounds from task difficulty.
 Five main findings emerge.
 First, \textbf{adaptive learning rates are beneficial}: over 3 seeds, AdamW and
 Adam reach $78.3\!\pm\!1.0$\% and $78.9\!\pm\!0.2$\%, respectively, while SGD
-trails by $\sim$4.5~pp ($74.4\!\pm\!0.0$\%), due to the heterogeneous gradient
+trails by $\sim$4.5~pp ($74.4$\%, std $<$0.1~pp), due to the heterogeneous gradient
 magnitudes induced by class-weighted loss on an unbalanced distance distribution.
 Second, \textbf{cosine annealing outperforms step and constant schedules, but
 the effect is modest} ($\sim$1.1~pp spread across schedules vs.\ $\sim$4.5~pp
@@ -683,10 +683,11 @@ it classifies easy states ($d \leq 3$) perfectly but fails on hard states
 ($d \geq 9$), and overestimates 12.5\% of the time, just short of the
 admissibility threshold required for A* optimality guarantees.
 Fifth, \textbf{A* with the learned heuristic provides large efficiency gains
-for near-solved states}: for $d \leq 3$ the heuristic overestimates rarely enough that A* typically
-returns optimal solutions while expanding only a fraction of the nodes
-required by Dijkstra; for $d \geq 4$ Dijkstra fails within the node limit
-while A* continues to succeed, though optimality is no longer guaranteed.
+for near-to-mid-range states}: for $d \leq 3$ the heuristic overestimates
+rarely enough that A* typically returns optimal solutions while expanding only
+a fraction of the nodes required by Dijkstra. For $d \leq 7$ A* succeeds on
+every test case; Dijkstra collapses entirely at $d \geq 6$. Optimality is
+no longer guaranteed beyond $d = 3$, and both algorithms fail at $d \geq 9$.
 
 The loss landscape analysis ties these findings together: an exceptionally flat
 basin ($4.76\times$ loss increase at filter-norm perturbations) explains why
@@ -707,7 +708,8 @@ becomes far more severe.
 The A* deployment suggests a natural next step: a scaled heuristic
 ($f = g + w \cdot h$, $0 < w < 1$) could reduce overestimation on the
 validation set and provide an empirical efficiency--optimality tradeoff, though
-global admissibility would require verification over the full state space. Scaling to the 3$\times$3$\times$3 cube via the self-supervised
+global admissibility would require verification over the full state space.
+Scaling to the 3$\times$3$\times$3 cube via the self-supervised
 reverse-BFS training strategy of DeepCubeA~\cite{agostinelli2019deepcubea}
 would test whether the observed optimizer and landscape properties generalize
 to a practically relevant setting where BFS is infeasible and the heuristic
