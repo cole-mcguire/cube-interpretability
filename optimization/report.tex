@@ -1,4 +1,4 @@
-\documentclass[conference]{IEEEtran}
+\documentclass[journal]{IEEEtran}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -19,11 +19,8 @@
 Optimizer and Hyperparameter Effects on a\\
 2$\times$2$\times$2 Rubik's Cube Solver}
 
-\author{
-  \IEEEauthorblockN{Cole McGuire}
-  \IEEEauthorblockA{Colorado School of Mines\\
-  MATH598B}
-}
+\author{Cole McGuire%
+\thanks{Colorado School of Mines, MATH598B.}}
 
 % ============================================================
 \begin{document}
@@ -333,7 +330,7 @@ selected by short grid search over $\{0.01, 0.05, 0.1\}$ to give the optimizer
 a fair opportunity to reach its best performance; AdamW and Adam use
 $\eta_0 = 10^{-3}$.
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{optimizer_comparison}
   \caption{Validation accuracy (left) and loss (right) over 30 training epochs
@@ -341,7 +338,7 @@ $\eta_0 = 10^{-3}$.
     AdamW and Adam converge to nearly identical final accuracy (79.9\% and
     79.8\%), while SGD trails by 5.5 pp (74.4\%).}
   \label{fig:optimizer}
-\end{figure*}
+\end{figure}
 
 Figure~\ref{fig:optimizer} shows the convergence curves. AdamW and Adam reach
 essentially the same final accuracy---79.9\% and 79.8\%, respectively, a
@@ -372,14 +369,14 @@ Holding the optimizer fixed to AdamW ($\eta_0 = 10^{-3}$, $\lambda = 10^{-4}$),
 we compare cosine annealing, step decay ($\gamma = 0.3$ every 10 epochs), and
 a constant schedule.
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{schedule_comparison}
   \caption{Validation accuracy (left), loss (center), and learning rate
     trajectory (right) for three schedules under AdamW. Cosine annealing
     (80.1\%) outperforms step decay (76.9\%) and constant (77.9\%).}
   \label{fig:schedule}
-\end{figure*}
+\end{figure}
 
 Figure~\ref{fig:schedule} shows that cosine annealing achieves the best
 accuracy (80.1\%), outperforming step decay by 3.2~pp and constant by 2.2~pp.
@@ -413,7 +410,7 @@ configuration. First, we sweep model width $d_\text{model} \in \{64, 128, 256\}$
 (fixing $L = 4$, $H = 4$). Second, we sweep weight decay
 $\lambda \in \{0, 10^{-4}, 10^{-3}, 10^{-2}\}$ (fixing $d_\text{model} = 128$).
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{hyperparameter_sensitivity}
   \caption{Convergence curves for the model width sweep (left) and weight
@@ -421,7 +418,7 @@ $\lambda \in \{0, 10^{-4}, 10^{-3}, 10^{-2}\}$ (fixing $d_\text{model} = 128$).
     by 3.2~pp; all weight decay values produce similar final accuracy, with
     no decay ($\lambda = 0$) performing best.}
   \label{fig:hyperparam}
-\end{figure*}
+\end{figure}
 
 \paragraph{Model width.}
 Figure~\ref{fig:hyperparam} (left) shows a non-monotone but ultimately positive
@@ -484,7 +481,7 @@ Figure~\ref{fig:heuristic} summarize per-distance performance.
   \end{tabular}
 \end{table}
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{heuristic_quality}
   \caption{Left: per-distance accuracy (dashed line = random baseline 8.3\%).
@@ -494,7 +491,7 @@ Figure~\ref{fig:heuristic} summarize per-distance performance.
     (inadmissible). The distribution is centered slightly below zero,
     reflecting a weak tendency toward underestimation.}
   \label{fig:heuristic}
-\end{figure*}
+\end{figure}
 
 The model achieves perfect accuracy at distances 0--2 (trivially distinguishable
 from the solved state) and 95.5\% at $d = 3$. Performance drops markedly for
@@ -524,7 +521,7 @@ near God's number (where it fails).
 \subsection{A* Search Deployment}
 \label{sec:astar}
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=\linewidth]{astar_results}
   \caption{Left: median nodes expanded (log scale, shaded IQR for A*) vs.\
@@ -534,7 +531,7 @@ near God's number (where it fails).
     A* with the learned heuristic remains effective through $d=5$--6 and
     finds optimal solutions for $d \leq 3$.}
   \label{fig:astar}
-\end{figure*}
+\end{figure}
 
 Figure~\ref{fig:astar} shows the results across distances 1--10.
 
@@ -575,7 +572,7 @@ the efficiency gain for guaranteed admissibility on a larger fraction of states.
 Figure~\ref{fig:landscape} shows the filter-normalized loss surface~\eqref{eq:landscape}
 around the AdamW solution $\theta^*$, evaluated on the validation set.
 
-\begin{figure*}[!t]
+\begin{figure}[!t]
   \centering
   \includegraphics[width=0.82\linewidth]{loss_landscape}
   \caption{Filter-normalized loss landscape around $\theta^*$ (left: contour
@@ -585,7 +582,7 @@ around the AdamW solution $\theta^*$, evaluated on the validation set.
     despite perturbation magnitudes as large as the filter norms themselves.
     Both 1D slices are smooth and bowl-shaped, indicating a wide, flat minimum.}
   \label{fig:landscape}
-\end{figure*}
+\end{figure}
 
 The landscape is strikingly flat. The center loss $\mathcal{L}(\theta^*) = 0.0010$
 increases to only 0.0047 at the edges of the grid ($\alpha, \beta = \pm 1.0$),
