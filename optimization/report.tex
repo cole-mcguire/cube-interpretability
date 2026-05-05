@@ -141,7 +141,7 @@ predict distance-to-goal on the 3$\times$3$\times$3 cube via self-supervised
 reverse BFS, then used the learned heuristic in Batch-Weighted A* (BWAS) to find
 high-quality solutions efficiently. The learned heuristic is not admissible by
 construction, and optimality is not guaranteed.
-Our setting is simpler---we train by direct supervised regression on BFS
+Our setting is simpler---we train by direct supervised classification on BFS
 distances---but the heuristic quality analysis (admissibility rate, MAE by
 distance class) connects directly to their work.
 
@@ -482,10 +482,9 @@ provides no benefit here. This is consistent with the nature of the task:
 BFS labels are deterministic and noise-free, the training set (300k samples)
 is large relative to model capacity ($\sim$200k parameters), and there is no
 meaningful overfitting to prevent. The flat landscape described in
-Section~\ref{sec:landscape} provides a geometric explanation: near-minimal
-solutions are spread over a wide basin, so any mechanism that pushes parameters
-toward the origin (weight decay) is equally likely to move them slightly away
-from a good basin center as toward it.
+The flat landscape described in Section~\ref{sec:landscape} is consistent with
+this behavior: near-minimal solutions spread over a wide basin are no more
+helped than hurt by mechanisms that push parameters toward the origin.
 
 \subsection{Learned Heuristic Quality}
 \label{sec:heuristic}
@@ -595,8 +594,7 @@ the heuristic is too weak to guide the search within the node budget.
 Despite the heuristic being inadmissible overall, A* finds optimal solutions
 75--80\% of the time for $d = 1$--7 and 94\% of the time at $d = 8$.
 The suboptimal solutions arise when the heuristic overestimates intermediate
-states, causing A* to commit to a slightly longer path before discovering
-the true shortest route. Notably, the optimality rate does not degrade
+states, causing A* to prioritize a slightly longer path over the true shortest route. Notably, the optimality rate does not degrade
 monotonically: $d = 8$ achieves 94\% while $d = 6$--7 achieve 70--75\%,
 reflecting the uneven accuracy profile of the heuristic (Table~\ref{tab:heuristic}).
 
@@ -689,8 +687,8 @@ a fraction of the nodes required by Dijkstra. For $d \leq 7$ A* succeeds on
 every test case; Dijkstra collapses entirely at $d \geq 6$. Optimality is
 no longer guaranteed beyond $d = 3$, and both algorithms fail at $d \geq 9$.
 
-The loss landscape analysis ties these findings together: an exceptionally flat
-basin ($4.76\times$ loss increase at filter-norm perturbations) explains why
+The loss landscape analysis ties these findings together: a broad, flat basin
+along the sampled directions ($4.76\times$ loss increase at filter-norm perturbations) explains why
 a wide range of hyperparameter choices produce similar outcomes, why no
 grokking-style phase transition is observed, and why SGD---despite slower
 convergence---eventually finds a nearly equivalent solution.
