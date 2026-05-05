@@ -1,0 +1,2290 @@
+{
+  "1": {
+    "d": 1,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 149,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 44,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 4,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 4,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 479,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 122,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 9,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 1,
+        "nodes": 1,
+        "optimal": true,
+        "success": true
+      }
+    ]
+  },
+  "2": {
+    "d": 2,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 83,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 14,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 20,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 2,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 16,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 3,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 103,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 20,
+        "optimal": false,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": 2,
+        "nodes": 10,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 19,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 16,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 4,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 14,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 10,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1740,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 141,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 11,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 14,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 196,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 9,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 11,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 90,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 2,
+        "nodes": 7,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1715,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 194,
+        "optimal": false,
+        "success": true
+      }
+    ]
+  },
+  "3": {
+    "d": 3,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 3,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 7,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 40,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 4,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 4,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 7,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 43,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 7,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 29,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 5,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 28,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 4,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 51,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 4,
+        "optimal": true,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": 3,
+        "nodes": 119,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 244,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2062,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 252,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 54,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 49,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 159,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 61,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 70,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 245,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2736,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 201,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 87,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 121,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2333,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 26,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2253,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 40,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2747,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 3,
+        "nodes": 127,
+        "optimal": true,
+        "success": true
+      }
+    ]
+  },
+  "4": {
+    "d": 4,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 4,
+        "nodes": 17,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 87,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 11,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 10,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 16,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 49,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 74,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 103,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 12,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 7,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 9,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 8,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 11,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 6,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 15,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 12,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 15,
+        "optimal": true,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": 4,
+        "nodes": 373,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 4,
+        "nodes": 823,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 400,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1269,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1869,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2666,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 5,
+        "nodes": 7228,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 837,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 3064,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1280,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2809,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2527,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2296,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 513,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 2372,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 1141,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 4,
+        "nodes": 3048,
+        "optimal": true,
+        "success": true
+      }
+    ]
+  },
+  "5": {
+    "d": 5,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 5,
+        "nodes": 63,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 18,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 306,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 12,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 12,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 14,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 15,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 44,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 21,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 13,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 22,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 11,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 76,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 18,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 29,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 46,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 49,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 37,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 141,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 18,
+        "optimal": true,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 5,
+        "nodes": 4609,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 5,
+        "nodes": 3859,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 5,
+        "nodes": 3560,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 5,
+        "nodes": 8356,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 5,
+        "nodes": 4153,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  },
+  "6": {
+    "d": 6,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 6,
+        "nodes": 209,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 412,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 71,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 163,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 208,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 70,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 62,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 1664,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 313,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 91,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 116,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 30,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 58,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 69,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 64,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 109,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 219,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 83,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 6,
+        "nodes": 32,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 1190,
+        "optimal": false,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  },
+  "7": {
+    "d": 7,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": 7,
+        "nodes": 235,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 540,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 1109,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 444,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1922,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 330,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 357,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 748,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1463,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 153,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 129,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 397,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 2504,
+        "optimal": false,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 463,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 161,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 144,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 609,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 241,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 7,
+        "nodes": 354,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1935,
+        "optimal": false,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  },
+  "8": {
+    "d": 8,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1860,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 3023,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1983,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 2133,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1934,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 4202,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 2090,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1849,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 903,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1539,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 8,
+        "nodes": 3733,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1550,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 1874,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 4689,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 3537,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 2565,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 8,
+        "nodes": 568,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": 9,
+        "nodes": 7294,
+        "optimal": false,
+        "success": true
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  },
+  "9": {
+    "d": 9,
+    "n": 20,
+    "astar": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": 9,
+        "nodes": 4908,
+        "optimal": true,
+        "success": true
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  },
+  "10": {
+    "d": 10,
+    "n": 4,
+    "astar": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ],
+    "dijkstra": [
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      },
+      {
+        "sol_len": null,
+        "nodes": 10000,
+        "optimal": null,
+        "success": false
+      }
+    ]
+  }
+}
