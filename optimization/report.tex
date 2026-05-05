@@ -1,8 +1,13 @@
-\documentclass[journal]{IEEEtran}
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage[numbers,sort&compress]{natbib}
 \usepackage{microtype}
+\usepackage{caption}
+\usepackage{subcaption}
 \usepackage{xcolor}
 \usepackage{hyperref}
 
@@ -15,12 +20,13 @@
   urlcolor=blue!60!black,
 }
 
-\title{Learning Combinatorial Distance Heuristics:\\
+\title{\textbf{Learning Combinatorial Distance Heuristics:}\\[4pt]
 Optimizer and Hyperparameter Effects on a\\
 2$\times$2$\times$2 Rubik's Cube Solver}
-
-\author{Cole McGuire%
-\thanks{Colorado School of Mines, MATH598B.}}
+\author{Cole McGuire\\[2pt]
+\small Colorado School of Mines\\
+\small MATH598B}
+\date{Spring 2026}
 
 % ============================================================
 \begin{document}
@@ -330,7 +336,7 @@ selected by short grid search over $\{0.01, 0.05, 0.1\}$ to give the optimizer
 a fair opportunity to reach its best performance; AdamW and Adam use
 $\eta_0 = 10^{-3}$.
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{optimizer_comparison}
   \caption{Validation accuracy (left) and loss (right) over 30 training epochs
@@ -369,7 +375,7 @@ Holding the optimizer fixed to AdamW ($\eta_0 = 10^{-3}$, $\lambda = 10^{-4}$),
 we compare cosine annealing, step decay ($\gamma = 0.3$ every 10 epochs), and
 a constant schedule.
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{schedule_comparison}
   \caption{Validation accuracy (left), loss (center), and learning rate
@@ -410,7 +416,7 @@ configuration. First, we sweep model width $d_\text{model} \in \{64, 128, 256\}$
 (fixing $L = 4$, $H = 4$). Second, we sweep weight decay
 $\lambda \in \{0, 10^{-4}, 10^{-3}, 10^{-2}\}$ (fixing $d_\text{model} = 128$).
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{hyperparameter_sensitivity}
   \caption{Convergence curves for the model width sweep (left) and weight
@@ -454,7 +460,7 @@ Sections~\ref{sec:optimizer}--\ref{sec:schedule}), we evaluate heuristic
 quality across the 30k validation examples. Table~\ref{tab:heuristic} and
 Figure~\ref{fig:heuristic} summarize per-distance performance.
 
-\begin{table}[!t]
+\begin{table}[h]
   \centering
   \caption{Per-distance classification accuracy and MAE for the AdamW +
     cosine model ($d_\text{model} = 128$). Distances 0--3 are nearly perfectly
@@ -481,7 +487,7 @@ Figure~\ref{fig:heuristic} summarize per-distance performance.
   \end{tabular}
 \end{table}
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{heuristic_quality}
   \caption{Left: per-distance accuracy (dashed line = random baseline 8.3\%).
@@ -521,7 +527,7 @@ near God's number (where it fails).
 \subsection{A* Search Deployment}
 \label{sec:astar}
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{astar_results}
   \caption{Left: median nodes expanded (log scale, shaded IQR for A*) vs.\
@@ -572,7 +578,7 @@ the efficiency gain for guaranteed admissibility on a larger fraction of states.
 Figure~\ref{fig:landscape} shows the filter-normalized loss surface~\eqref{eq:landscape}
 around the AdamW solution $\theta^*$, evaluated on the validation set.
 
-\begin{figure}[!t]
+\begin{figure}[t]
   \centering
   \includegraphics[width=0.82\linewidth]{loss_landscape}
   \caption{Filter-normalized loss landscape around $\theta^*$ (left: contour
@@ -670,7 +676,7 @@ annealing to determine whether multi-cycle scheduling aids escape from flat
 regions at this scale.
 
 % ============================================================
-\bibliographystyle{IEEEtran}
+\bibliographystyle{plainnat}
 \bibliography{references}
 
 \end{document}
