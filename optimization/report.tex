@@ -99,7 +99,7 @@ characterize where it fails.
 \label{sec:related}
 
 \paragraph{Adaptive gradient methods.}
-Stochastic gradient descent with momentum~\cite{polyak1964momentum,rumelhart1986backprop}
+Stochastic gradient descent with momentum~\cite{sutskever2013momentum,rumelhart1986backprop}
 remains a strong baseline but requires careful learning rate tuning.
 Adam~\cite{kingma2015adam} introduced per-parameter adaptive learning rates via
 first and second moment estimates of the gradient, substantially reducing
@@ -203,7 +203,7 @@ We compare three first-order optimization algorithms.
   \label{eq:sgd}
 \end{equation}
 where $\eta$ is the global learning rate and $\mu = 0.9$ is the momentum
-coefficient~\cite{polyak1964momentum}. Weight decay is added as an L2 penalty
+coefficient~\cite{sutskever2013momentum}. Weight decay is added as an L2 penalty
 $\tfrac{\lambda}{2}\|\theta\|^2$ to the loss before differentiation.
 
 \paragraph{Adam.}
