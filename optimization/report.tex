@@ -482,9 +482,9 @@ provides no benefit here. This is consistent with the nature of the task:
 BFS labels are deterministic and noise-free, the training set (300k samples)
 is large relative to model capacity ($\sim$200k parameters), and there is no
 meaningful overfitting to prevent. The flat landscape described in
-The flat landscape described in Section~\ref{sec:landscape} is consistent with
-this behavior: in a wide basin of near-minimal solutions, shrinking parameters
-toward the origin is no more likely to help than hurt.
+Section~\ref{sec:landscape} is consistent with this behavior: in a wide basin
+of near-minimal solutions, shrinking parameters toward the origin is no more
+likely to help than hurt.
 
 \subsection{Learned Heuristic Quality}
 \label{sec:heuristic}
@@ -555,8 +555,8 @@ cannot be used directly in A* with optimality guarantees. However, the error
 distribution (Figure~\ref{fig:heuristic}, right) is skewed toward underestimation:
 87.5\% of predictions are at or below the true distance. In practice, an A*
 variant tolerating occasional overestimates---similar to the BWAS approach of
-DeepCubeA~\cite{agostinelli2019deepcubea}---would find near-optimal or optimal
-solutions for the vast majority of states.
+DeepCubeA~\cite{agostinelli2019deepcubea}---may still find near-optimal or
+optimal solutions for many near- and mid-distance states.
 A key direction for future work is filtering the search with the heuristic on
 near-solved states (where it is reliable) and falling back to BFS for states
 near God's number (where it fails).
@@ -678,8 +678,8 @@ offers no benefit and no decay performs best, reflecting the clean, noise-free
 nature of BFS-derived labels.
 Fourth, \textbf{the learned heuristic is practical but not provably optimal}:
 it classifies easy states ($d \leq 3$) perfectly but fails on hard states
-($d \geq 9$), and overestimates 12.5\% of the time, just short of the
-admissibility threshold required for A* optimality guarantees.
+($d \geq 9$), and overestimates 12.5\% of the time, violating the admissibility condition
+required for A* optimality guarantees.
 Fifth, \textbf{A* with the learned heuristic provides large efficiency gains
 for near-to-mid-range states}: for $d \leq 3$ the heuristic overestimates
 rarely enough that A* typically returns optimal solutions while expanding only
