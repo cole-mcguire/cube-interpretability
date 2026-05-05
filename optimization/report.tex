@@ -36,7 +36,7 @@ Optimizer and Hyperparameter Effects on a\\
 \begin{abstract}
 We study the numerical optimization of a small transformer trained to approximate
 BFS optimal distance on the 2$\times$2$\times$2 Rubik's cube---a combinatorial
-domain where ground-truth solutions are exactly computable.
+domain where ground-truth optimal distances are exactly computable.
 We compare three first-order optimizers (AdamW, Adam, SGD with momentum) and
 three learning rate schedules (cosine annealing, constant, step decay), conduct
 a hyperparameter sensitivity analysis over model width and weight decay, analyze
@@ -48,9 +48,10 @@ constant schedules by up to 3.2~pp; and weight decay provides no benefit on this
 clean combinatorial task.
 The learned heuristic achieves perfect accuracy at distances 0--2 but degrades
 sharply for harder states, overestimating 12.5\% of the time and therefore
-falling short of the admissibility criterion required for provably optimal A* search.
-Loss landscape analysis reveals an exceptionally flat basin around the solution,
-consistent with the low hyperparameter sensitivity observed across experiments.
+violating the admissibility condition required for A* optimality guarantees.
+A two-dimensional loss-landscape visualization reveals a broad, flat basin around
+the trained solution, consistent with the low hyperparameter sensitivity observed
+across experiments.
 \end{abstract}
 
 % ============================================================
@@ -68,12 +69,12 @@ comparisons on large benchmarks conflate optimizer effects with task difficulty.
 The 2$\times$2$\times$2 Rubik's cube offers a rare controlled setting.
 Its full state space---roughly 3.7 million reachable positions---is small
 enough that the true minimum number of moves to solve any state (the
-\emph{optimal distance}) can be computed exactly via bidirectional BFS.
+\emph{optimal distance}) can be computed exactly via BFS.
 God's number for the 2$\times$2$\times$2 is 11 moves in the half-turn metric~\cite{agostinelli2019deepcubea}.
 A neural network trained to predict this distance is therefore learning to
 approximate a \emph{known} function with structured geometry:
-distance is 0 at the solved state, increases monotonically under scrambling,
-and is symmetric under rotational equivalences of the cube.
+distance is 0 at the solved state, changes by at most one under any legal face
+turn, and is symmetric under rotational equivalences of the cube.
 This setup sidesteps the usual confound in optimizer comparisons---that task
 difficulty and generalization gap are unknown---because both are precisely
 characterizable via the BFS table.
@@ -136,9 +137,9 @@ than the full non-convex landscape implies.
 \paragraph{Learned heuristics for combinatorial search.}
 DeepCubeA~\cite{agostinelli2019deepcubea} trained a deep residual network to
 predict distance-to-goal on the 3$\times$3$\times$3 cube via self-supervised
-reverse BFS, then used the learned heuristic in Batch-Weighted A* (BWAS) to
-find optimal solutions. Their model is not admissible by construction but
-achieves optimality in practice by combining the heuristic with tree search.
+reverse BFS, then used the learned heuristic in Batch-Weighted A* (BWAS) to find
+high-quality solutions efficiently. The learned heuristic is not admissible by
+construction, and optimality is not guaranteed.
 Our setting is simpler---we train by direct supervised regression on BFS
 distances---but the heuristic quality analysis (admissibility rate, MAE by
 distance class) connects directly to their work.
@@ -175,9 +176,9 @@ denotes all learnable parameters. We minimize the class-weighted cross-entropy
   \label{eq:loss}
 \end{equation}
 where $w_k \propto 1/(\text{count}(k)+1)$, normalized so $\sum_k w_k = 12$,
-are inverse-frequency class weights. These compensate for the uneven BFS
-distribution: scramble sequences of varying depth produce fewer examples
-near God's number (distance 10--11) than at intermediate distances.
+are inverse-frequency class weights. These compensate for imbalance in the
+sampled training set, whose distance distribution is not uniform across
+$\{0, \ldots, 11\}$.
 
 \subsection{Model Architecture}
 
@@ -188,9 +189,12 @@ and an MLP sublayer using ReLU activations), and decoded to 12 logits by a
 final linear head preceded by layer normalization.
 Since there is only one input token, the self-attention sublayers are
 degenerate---attention weights are always 1.0---and computation flows almost
-entirely through the MLP sublayers. The default configuration is
-$d_\text{model} = 128$, $L = 4$ layers, $H = 4$ heads, yielding approximately
-200k trainable parameters.
+entirely through the MLP sublayers. In effect, the model is a
+\emph{transformer-style residual MLP}: the transformer label reflects the
+architectural template (residual blocks, layer norm, multi-head projections),
+but expressive power comes entirely from the feedforward sublayers. The default
+configuration is $d_\text{model} = 128$, $L = 4$ layers, $H = 4$ heads,
+yielding approximately 200k trainable parameters.
 
 \subsection{Optimizers}
 
@@ -284,6 +288,9 @@ is the model's predicted distance to solved. Because $h$ is inadmissible
 (overestimates 12.5\% of the time), A* is not guaranteed to return optimal
 solutions; we measure empirically how often it does.
 
+Since $h$ can overestimate, the first solution found by A* is not guaranteed
+to be optimal; we therefore evaluate solution quality empirically by comparing
+returned path lengths against known BFS distances.
 We compare A* against Dijkstra's algorithm ($h \equiv 0$), which is equivalent
 to BFS on an unweighted graph and always finds an optimal solution but expands
 states in order of $g$ only. Both algorithms share the same node limit of
@@ -326,6 +333,10 @@ $\lambda = 10^{-4}$, and cosine annealing with $\eta_\text{min} = 5 \times 10^{-
 Each configuration is trained once from a random initialization; result caching
 ensures reproducibility from saved JSON histories. Training ran on Apple Silicon
 GPU (MPS) and took approximately 2--3 minutes per 30-epoch run.
+Because the class-weighted loss uses inverse-frequency weights normalized across
+classes, its absolute scale is not directly comparable to standard unweighted
+cross-entropy; we therefore interpret validation loss primarily through relative
+trends rather than absolute values.
 
 \subsection{Optimizer Comparison}
 \label{sec:optimizer}
@@ -459,27 +470,28 @@ Figure~\ref{fig:heuristic} summarize per-distance performance.
 
 \begin{table}[h]
   \centering
-  \caption{Per-distance classification accuracy and MAE for the AdamW +
-    cosine model ($d_\text{model} = 128$). Distances 0--3 are nearly perfectly
-    classified; performance degrades sharply for $d \geq 4$ and fails
-    completely at $d = 10$.}
+  \caption{Per-distance validation counts, classification accuracy, and MAE for
+    the AdamW + cosine model ($d_\text{model} = 128$). Distances 0--3 are
+    nearly perfectly classified; performance degrades sharply for $d \geq 4$.
+    The $d = 10$ result (0\% accuracy) is based on only 4 validation examples
+    and should be interpreted cautiously.}
   \label{tab:heuristic}
   \smallskip
-  \begin{tabular}{ccc}
+  \begin{tabular}{cccc}
     \toprule
-    True distance $d^*$ & Accuracy (\%) & MAE \\
+    True distance $d^*$ & Val.\ count & Accuracy (\%) & MAE \\
     \midrule
-    0  & 100.0 & 0.000 \\
-    1  & 100.0 & 0.000 \\
-    2  & 100.0 & 0.000 \\
-    3  &  95.5 & 0.059 \\
-    4  &  67.0 & 0.625 \\
-    5  &  24.7 & 1.373 \\
-    6  &  10.3 & 1.451 \\
-    7  &  24.3 & 1.237 \\
-    8  &  38.2 & 1.264 \\
-    9  &   4.7 & 2.008 \\
-    10 &   0.0 & 1.500 \\
+    0  & 5{,}379 & 100.0 & 0.000 \\
+    1  & 5{,}910 & 100.0 & 0.000 \\
+    2  & 4{,}991 & 100.0 & 0.000 \\
+    3  & 4{,}199 &  95.5 & 0.059 \\
+    4  & 3{,}554 &  67.0 & 0.625 \\
+    5  & 2{,}613 &  24.7 & 1.373 \\
+    6  & 1{,}741 &  10.3 & 1.451 \\
+    7  & 1{,}006 &  24.3 & 1.237 \\
+    8  &    469  &  38.2 & 1.264 \\
+    9  &    129  &   4.7 & 2.008 \\
+    10 &      4  &   0.0 & 1.500 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -566,8 +578,9 @@ for near-to-mid-range states ($d \leq 7$), where it provides a $24$--$500\times$
 node reduction over Dijkstra while succeeding on every test case.
 For hard states ($d \geq 9$), the heuristic's accuracy collapses and both
 algorithms hit the node limit.
-A weighted A* variant ($f = g + w \cdot h$, $w < 1$) could trade some of
-the efficiency gain for guaranteed admissibility on a larger fraction of states.
+A scaled-heuristic variant ($f = g + w \cdot h$, $0 < w < 1$) could reduce
+overestimation on a larger fraction of states, trading some efficiency for
+improved solution quality.
 
 \subsection{Loss Landscape}
 \label{sec:landscape}
@@ -592,8 +605,8 @@ increases to only 0.0047 at the edges of the grid ($\alpha, \beta = \pm 1.0$),
 a factor of $4.76\times$ despite perturbations equal in magnitude to the trained
 filter norms themselves. By comparison, Li et al.~\cite{li2018landscape} find
 that poorly generalizing networks exhibit loss ratios of $100\times$ or more
-over similar perturbation scales; a ratio below 5 is indicative of an
-exceptionally wide, flat minimum.
+over similar perturbation scales; a ratio below 5 is suggestive of a wide, flat minimum along the sampled
+directions.
 
 Both 1D cross-sections through $\theta^*$ are smooth and bowl-shaped with no
 sharp curvature, indicating the optimizer has found a minimum with low
@@ -660,10 +673,10 @@ God's number 26, where BFS is infeasible and the class imbalance problem
 becomes far more severe.
 
 \paragraph{Future directions.}
-The A* deployment suggests a natural next step: weighted A*
-($f = g + w \cdot h$, $w < 1$) would recover admissibility for a calibrated
-$w$ at the cost of fewer node savings, providing a tunable optimality--efficiency
-tradeoff. Scaling to the 3$\times$3$\times$3 cube via the self-supervised
+The A* deployment suggests a natural next step: a scaled heuristic
+($f = g + w \cdot h$, $0 < w < 1$) could reduce overestimation on the
+validation set and provide an empirical efficiency--optimality tradeoff, though
+global admissibility would require verification over the full state space. Scaling to the 3$\times$3$\times$3 cube via the self-supervised
 reverse-BFS training strategy of DeepCubeA~\cite{agostinelli2019deepcubea}
 would test whether the observed optimizer and landscape properties generalize
 to a practically relevant setting where BFS is infeasible and the heuristic
