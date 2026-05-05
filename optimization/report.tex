@@ -25,7 +25,7 @@ Optimizer and Hyperparameter Effects on a\\
 2$\times$2$\times$2 Rubik's Cube Solver}
 \author{Cole McGuire\\[2pt]
 \small Colorado School of Mines\\
-\small Special Topics: Numerical Optimization}
+\small MATH 598B: Numerical Optimization}
 \date{Spring 2026}
 
 % ============================================================
@@ -357,7 +357,7 @@ decay has minimal effect overall (Section~\ref{sec:hyperparam}).
 
 The 5.5~pp advantage of adaptive methods over SGD most likely stems from the
 heterogeneous gradient magnitudes present in early training. Cube states at
-rare distances (d=0--2 and d=10--11) are far fewer than those at common
+rare distances ($d = 0$--2 and $d = 10$--11) are far fewer than those at common
 distances, so the class-weighted loss produces very different gradient scales
 across output neurons. Per-parameter adaptive step sizes in Adam/AdamW
 automatically compensate for this variation, effectively giving each parameter
@@ -384,7 +384,7 @@ a constant schedule.
   \label{fig:schedule}
 \end{figure}
 
-Figure~\ref{fig:schedule} shows that cosine annealing achieves the best best
+Figure~\ref{fig:schedule} shows that cosine annealing achieves the best
 accuracy (80.1\%), outperforming step decay by 3.2~pp and constant by 2.2~pp.
 The smooth monotone decay of the cosine schedule allows the optimizer to
 progressively tighten its updates as training proceeds, refining the solution
@@ -434,14 +434,11 @@ reaches 82.3\%---a meaningful 3.2~pp gain. The sharp threshold between 128 and
 256 (but not between 64 and 128) suggests that 64 hidden dimensions is already
 sufficient to represent the key distance-relevant structure of the cube's
 residual stream, but additional capacity beyond 128 allows more reliable
-classification of hard middle-range distances ($d = 5$--9). This interpretation
-is consistent with the mechanistic finding that a small circuit---fewer than a
-dozen highly active neurons---accounts for most of the distance prediction
-in the trained model.
+classification of hard middle-range distances ($d = 5$--9).
 
 \paragraph{Weight decay.}
 Figure~\ref{fig:hyperparam} (right) shows that all four weight decay values
-produce final accuracy within 1.4~pp of each other (77.9\%--80.1\%), with no
+produce final accuracy within 1.4~pp of each other (78.7\%--80.1\%), with no
 weight decay ($\lambda = 0$) performing \emph{best} at 80.1\%. Regularization
 provides no benefit here. This is consistent with the nature of the task:
 BFS labels are deterministic and noise-free, the training set (300k samples)
