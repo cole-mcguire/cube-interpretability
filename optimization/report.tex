@@ -44,7 +44,7 @@ a hyperparameter sensitivity analysis over model width and weight decay, analyze
 the quality of the learned distance heuristic relative to BFS ground truth, and
 visualize the loss landscape via filter-normalized random directions~\cite{li2018landscape}.
 Over three random seeds, AdamW and Adam converge to $78.3\!\pm\!1.0$\% and
-$78.9\!\pm\!0.2$\%, respectively, while SGD trails by $\sim$4.5~pp ($74.4\!\pm\!0.0$\%);
+$78.9\!\pm\!0.2$\%, respectively, while SGD trails by $\sim$4.5~pp ($74.4$\%, std $<$0.1~pp);
 cosine annealing outperforms step and constant schedules by $\sim$1~pp; and
 weight decay provides no benefit on this clean combinatorial task.
 The learned heuristic achieves perfect accuracy at distances 0--2 but degrades
@@ -296,7 +296,7 @@ We compare A* against Dijkstra's algorithm ($h \equiv 0$), which is equivalent
 to BFS on an unweighted graph and always finds an optimal solution but expands
 states in order of $g$ only. Both algorithms share the same node limit of
 10,000 expanded states per search; a search that exceeds the limit is counted
-as a failure. Successor generation applies each of the 18 face moves to the
+as a failure. Successor generation applies each of the 18 quarter-, half-, and inverse-quarter-turn face moves to the
 current state, and the heuristic is evaluated in batches of 18 via the model.
 We run 20 test cases per distance $d \in \{1, \ldots, 10\}$, sampled from the
 validation set; solution optimality is verified by comparing the returned
@@ -360,13 +360,18 @@ $\eta_0 = 10^{-3}$.
 
 Figure~\ref{fig:optimizer} shows the convergence curves for a single representative
 seed; Table~\ref{tab:multiseed} reports mean $\pm$ std over three seeds.
+Because class weighting emphasizes rare distance classes, validation accuracy
+and weighted validation loss need not move monotonically together: a model can
+improve overall accuracy while becoming less calibrated on the heavily weighted
+rare classes, which explains the occasional divergence between the two curves.
 Adam achieves a slightly higher mean (78.9\%) than AdamW (78.3\%), but the
 0.6~pp gap is well within AdamW's seed-to-seed spread ($\pm$1.0~pp), confirming
 that \emph{decoupled weight decay provides no meaningful advantage on this task}.
-Notably, Adam's near-zero variance ($\pm$0.2~pp) suggests its gradient-moment
-estimates produce a more deterministic optimization trajectory on this structured
-problem, while AdamW's slightly higher variance may reflect the interaction
-between decoupled weight decay and random initialization.
+Notably, Adam's lower observed variance ($\pm$0.2~pp vs.\ $\pm$1.0~pp for AdamW)
+may indicate a more stable trajectory on this structured problem, though three
+seeds are not sufficient to draw a strong conclusion; AdamW's higher spread
+could reflect the interaction between decoupled weight decay and random
+initialization.
 Both adaptive methods leave SGD well behind: SGD reaches only 74.4\%---a
 $\sim$4.5~pp deficit---with essentially zero variance across seeds ($\pm$0.0~pp),
 indicating it converges reliably but to a shallower minimum.
@@ -390,14 +395,17 @@ a constant schedule.
   \centering
   \includegraphics[width=\linewidth]{schedule_comparison}
   \caption{Validation accuracy (left), loss (center), and learning rate
-    trajectory (right) for three schedules under AdamW. Cosine annealing
+    trajectory (right) for three schedules under AdamW.
     Mean $\pm$ std over 3 seeds: cosine $78.3\!\pm\!1.0$\%, step $77.5\!\pm\!1.3$\%, constant $77.2\!\pm\!1.0$\%.}
   \label{fig:schedule}
 \end{figure}
 
-Table~\ref{tab:multiseed} shows that across three seeds cosine annealing
-achieves the best mean accuracy (78.3\%), outperforming step decay (77.5\%) and
-constant (77.2\%) by 0.8~pp and 1.1~pp respectively.
+Figure~\ref{fig:schedule} shows representative single-seed convergence
+trajectories; Table~\ref{tab:multiseed} reports the three-seed summary (note
+that single-seed curves and multi-seed means can differ due to run-to-run
+noise). Across seeds, cosine annealing achieves the best mean accuracy (78.3\%),
+outperforming step decay (77.5\%) and constant (77.2\%) by 0.8~pp and 1.1~pp
+respectively.
 The smooth monotone decay of the cosine schedule allows the optimizer to
 progressively tighten its updates, refining the solution without abrupt
 disruptions. Step decay drops the learning rate to $0.3^3 \approx 2.7\%$ of
@@ -531,14 +539,16 @@ The model achieves perfect accuracy at distances 0--2 (trivially distinguishable
 from the solved state) and 95.5\% at $d = 3$. Performance drops markedly for
 $d \geq 4$, reaching a local minimum at $d = 6$ (10.3\%) before recovering
 partially at $d = 7$--8 ($\approx$30\%). Distance 9 is nearly unclassifiable
-(4.7\%) and distance 10 is completely misclassified (0\% accuracy, MAE = 1.5).
+(4.7\%) and the four sampled distance-10 states are all misclassified (0\% accuracy,
+MAE = 1.5), though this estimate rests on only four validation examples and
+should be treated with caution.
 
 The non-monotone accuracy curve---$d=8$ performing better than $d=6$ or $d=7$
-despite being ``harder''---reflects class imbalance in the training data. The
-BFS distribution over the 2$\times$2$\times$2 state space peaks near God's
-number (distance 11), so shorter scrambles produce fewer training examples at
-the hardest distances. The model therefore has limited signal to distinguish
-$d=9$ from $d=10$ and tends to classify $d=10$ states as $d=9$.
+despite being ``harder''---likely reflects the sampled training distribution
+rather than intrinsic difficulty alone. As Table~\ref{tab:heuristic} shows, high-distance
+states are rare in this dataset: only 129 validation examples at $d = 9$ and
+4 at $d = 10$. The model therefore receives limited signal for the hardest
+classes and tends to confuse adjacent high-distance labels.
 
 The learned heuristic is \textbf{not admissible}: 12.5\% of validation predictions
 overestimate the true distance ($\hat{d} > d^*$). This means the heuristic
@@ -658,7 +668,7 @@ unusually clean attribution of optimization behavior to algorithm and
 hyperparameter choices rather than to confounds from task difficulty.
 
 Five main findings emerge.
-First, \textbf{adaptive learning rates are essential}: over 3 seeds, AdamW and
+First, \textbf{adaptive learning rates are beneficial}: over 3 seeds, AdamW and
 Adam reach $78.3\!\pm\!1.0$\% and $78.9\!\pm\!0.2$\%, respectively, while SGD
 trails by $\sim$4.5~pp ($74.4\!\pm\!0.0$\%), due to the heterogeneous gradient
 magnitudes induced by class-weighted loss on an unbalanced distance distribution.
@@ -673,8 +683,8 @@ it classifies easy states ($d \leq 3$) perfectly but fails on hard states
 ($d \geq 9$), and overestimates 12.5\% of the time, just short of the
 admissibility threshold required for A* optimality guarantees.
 Fifth, \textbf{A* with the learned heuristic provides large efficiency gains
-for near-solved states}: for $d \leq 3$ the heuristic is near-admissible and
-A* finds optimal solutions while expanding only a fraction of the nodes
+for near-solved states}: for $d \leq 3$ the heuristic overestimates rarely enough that A* typically
+returns optimal solutions while expanding only a fraction of the nodes
 required by Dijkstra; for $d \geq 4$ Dijkstra fails within the node limit
 while A* continues to succeed, though optimality is no longer guaranteed.
 
