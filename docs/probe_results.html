@@ -22,6 +22,7 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
 .page-intro h2 { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; }
 .page-intro p { font-size: 13px; color: #94a3b8; line-height: 1.65; margin-bottom: 6px; }
 .page-intro strong { color: #cbd5e1; }
+.fig-caption { font-size: 12px; color: #64748b; padding: 6px 20px 14px; line-height: 1.6; max-width: 860px; }
 </style><meta charset="utf-8" /></head>
 <body>
 <header>
@@ -3990,6 +3991,23 @@ return Plotly;
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', patch); }
   else { patch(); }
 })();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const captions = {
+    'db46eeb5-a91c-4ba4-aea9-8ec55252b5d9':
+      'Fig. 1 — Linear probe results across all five residual-stream positions (embedding + 4 transformer layers) for four targets. Face-solved and corner-orientation probes start near-perfect at the embedding; corner orientation degrades in later layers as the model shifts toward encoding optimal distance, which improves monotonically from ~70% to ~85% accuracy by L3.'
+  };
+  Object.entries(captions).forEach(([id, text]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const p = document.createElement('p');
+      p.className = 'fig-caption';
+      p.textContent = text;
+      el.parentNode.insertAdjacentElement('afterend', p);
+    }
+  });
+});
 </script>
 </body>
 </html>

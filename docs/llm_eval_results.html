@@ -29,6 +29,21 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
   transition: background .15s, color .15s; }
 .tab-btn:hover { background: #334155; color: #e2e8f0; }
 .tab-btn.active { background: #334155; border-color: #475569; color: #f1f5f9; font-weight: 600; }
+.example-section { max-width: 860px; padding: 8px 20px 20px; }
+.example-section h3 { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 10px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+.example-section > p { font-size: 12px; color: #94a3b8; line-height: 1.6; margin-bottom: 10px; }
+.repr-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.repr-card { background: #1e293b; border: 1px solid #334155; border-radius: 6px; padding: 10px 14px; }
+.repr-card h4 { font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.repr-card pre { margin: 0; font-size: 11px; color: #94a3b8; font-family: 'SFMono-Regular', Consolas, monospace; white-space: pre; overflow-x: auto; line-height: 1.5; }
+.repr-card.good { border-color: #10b981; }
+.repr-card.good h4 { color: #10b981; }
+.repr-card.bad { border-color: #ef4444; }
+.repr-card.bad h4 { color: #ef4444; }
+.repr-card .annot { font-size: 11px; color: #64748b; margin-top: 6px; font-style: italic; }
+.prompt-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 10px 14px; margin-bottom: 10px; }
+.prompt-box h4 { font-size: 11px; font-weight: 700; color: #93c5fd; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.prompt-box pre { margin: 0; font-size: 11px; color: #94a3b8; font-family: 'SFMono-Regular', Consolas, monospace; white-space: pre-wrap; line-height: 1.5; }
 </style>
 <title>Phase 17 — LLM Eval</title>
 </head>
@@ -65,6 +80,137 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
   <p><strong>Baseline:</strong> move_sequence gives the model the scramble moves directly — any model that can reverse a sequence achieves a near-100% ceiling. The other representations require genuine spatial reasoning.</p>
   <p><strong>To add a model:</strong> set its API key env var and run <code style="background:#0f172a;padding:1px 5px;border-radius:3px">uv run python test_representations.py --models MODEL_NAME</code>. Results accumulate across runs.</p>
 </section>
+
+<section class="example-section">
+  <h3>Prompt Format &amp; Representation Examples</h3>
+  <p>Each trial uses a two-part prompt: a <strong>system message</strong> instructing the model to output only a move sequence, followed by a <strong>one-shot user message</strong> containing a solved-state example and then the actual scrambled state. Below is the exact system message and the five representation formats shown for a single 3-move scramble (<code>U' L2 B</code>).</p>
+
+  <div class="prompt-box">
+    <h4>System message (identical for all representations)</h4>
+    <pre>You are an expert at solving 2x2x2 Rubik's cubes.
+
+Move notation:
+- U/D/F/B/L/R = top/bottom/front/back/left/right face
+- No suffix = 90° clockwise (when looking at that face head-on)
+- ' suffix = 90° counterclockwise
+- 2 suffix = 180°
+
+The cube is solved when every face shows a single color.
+Standard solved orientation: White on top (U), Green in front (F), Red on right (R),
+Orange on left (L), Blue on back (B), Yellow on bottom (D).
+
+Do NOT write code, pseudocode, or algorithms of any kind.
+Do NOT explain your reasoning or describe your approach.
+Respond with ONLY the solution move sequence, moves separated by spaces.
+No explanation. No extra text. Example: U R' F2 D B2 L</pre>
+  </div>
+
+  <p>The user message contains one solved-state example (distance 0) followed by the scrambled state. For instance, the <code>compact_string</code> user message would be:</p>
+
+  <div class="prompt-box">
+    <h4>User message structure (compact_string example)</h4>
+    <pre>Example:
+Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:WWWW D:YYYY F:GGGG B:BBBB L:OOOO R:RRRR
+
+---
+Now solve this cube:
+Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:GRYW D:WYOB F:BORG B:BROG L:WOYB R:GYRW</pre>
+  </div>
+
+  <p>The five representations for the scramble <strong>U' L2 B</strong> (distance = 3, solution = <code>B' L2 U</code>):</p>
+
+  <div class="repr-cards">
+    <div class="repr-card">
+      <h4>face_grid</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+Each face shown as viewed from outside the cube.
+
+        U (top):
+        G R
+        Y W
+
+L (left)    F (front)   R (right)   B (back)
+W O          B O          G Y         B R
+Y B         R G         R W         O G
+
+        D (bottom):
+        W Y
+        O B</pre>
+      <p class="annot">Spatial layout. Provides visual context but requires the model to mentally rotate and track sticker positions — no model solved any cube using this format.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>compact_string</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+Format: 6 faces × 4 stickers, reading order (TL TR BL BR) as viewed from outside.
+Face order: U D F B L R
+
+U:GRYW D:WYOB F:BORG B:BROG L:WOYB R:GYRW</pre>
+      <p class="annot">Compact 24-character encoding. Information is complete but requires spatial reasoning to decode — zero solves across all models.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>corner_cubies</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+There are 8 corner cubies. Each is described by the color visible on each face at that corner position.
+
+Solved state for reference:
+  UFR:(U:W F:G R:R)  UFL:(U:W F:G L:O)  UBL:(U:W B:B L:O)  UBR:(U:W B:B R:R)
+  DFR:(D:Y F:G R:R)  DFL:(D:Y F:G L:O)  DBL:(D:Y B:B L:O)  DBR:(D:Y B:B R:R)
+
+Current state:
+  UFR:(U:W F:O R:G)
+  UFL:(U:Y F:B L:O)
+  UBL:(U:G B:R L:W)
+  UBR:(U:R B:B R:Y)
+  DFR:(D:Y F:G R:R)
+  DFL:(D:W F:R L:B)
+  DBL:(D:O B:G L:Y)
+  DBR:(D:B B:O R:W)</pre>
+      <p class="annot">Per-corner description. Includes solved reference, making the goal explicit. Near-zero solve rate (1/50 for claude-sonnet-4-6 at d=3) — almost no models can convert this into moves.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>piece_identity</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+8 corner pieces, each named [W/Y]-[F/B-color]-[L/R-color] as in the solved state.
+Goal: every piece at its home position with its W or Y sticker facing U or D.
+
+Solved reference:
+  W-G-R@UFR  W-G-O@UFL  W-B-O@UBL  W-B-R@UBR
+  Y-G-R@DFR  Y-G-O@DFL  Y-B-O@DBL  Y-B-R@DBR
+
+Current state (piece → current position, which face its W/Y sticker faces):
+  W-G-R: at UBL, W faces L — needs to move to UFR + twist
+  W-G-O: at UFR, W faces U — needs to move home (UFL)
+  W-B-O: at DBR, W faces R — needs to move to UBL + twist
+  W-B-R: at DFL, W faces D — needs to move home (UBR)
+  Y-G-R: solved
+  Y-G-O: at DBL, Y faces L — needs to move to DFL + twist
+  Y-B-O: at UFL, Y faces U — needs to move home (DBL)
+  Y-B-R: at UBR, Y faces R — needs to move to DBR + twist</pre>
+      <p class="annot">Semantic piece-tracking with explicit goal annotations. Despite the helpful framing, no model could convert the placement information into a valid move sequence.</p>
+    </div>
+
+    <div class="repr-card good">
+      <h4>move_sequence — only format that works</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+Starting from the solved state, the following scramble was applied:
+
+  U' L2 B</pre>
+      <p class="annot"><strong>Trivial inversion:</strong> the model just needs to reverse the sequence (B' L2 U). This is not genuine spatial reasoning — it is pure sequence manipulation. Models that can reliably reverse sequences score high; those that cannot (e.g., llama-3.3-70b-versatile) score near zero even here.</p>
+    </div>
+  </div>
+</section>
+
 <div>                        <script>window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
         <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.5.0.min.js" integrity="sha256-fHbNLP+GlIXN+efbQec78UkemUz3NJp7UmfGxC1tNxs=" crossorigin="anonymous"></script>                <div id="26d95f00-731e-40ab-a4dc-f16c69946781" class="plotly-graph-div" style="height:420px; width:100%;"></div>            <script>                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("26d95f00-731e-40ab-a4dc-f16c69946781")) {                    Plotly.newPlot(                        "26d95f00-731e-40ab-a4dc-f16c69946781",                        [{"hovertemplate":"claude-sonnet-4-6\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#3b82f6"},"name":"claude-sonnet-4-6","text":["0\u002f50","0\u002f50","1\u002f50","0\u002f50","217\u002f448","0\u002f50","0\u002f50","0\u002f50"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,2.0,0.0,48.4375,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"gpt-4o\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#10b981"},"name":"gpt-4o","text":["0\u002f50","0\u002f50","0\u002f50","0\u002f50","145\u002f448","0\u002f50","0\u002f50","0\u002f50"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,32.36607142857143,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"claude-opus-4-7\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#f59e0b"},"name":"claude-opus-4-7","text":["0\u002f5","0\u002f5","0\u002f5","0\u002f5","142\u002f448","0\u002f5","0\u002f5","0\u002f5"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,31.696428571428573,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"llama-3.3-70b-versatile\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#ef4444"},"name":"llama-3.3-70b-versatile","text":["0\u002f5","0\u002f5","0\u002f5","0\u002f5","1\u002f5","0\u002f5","0\u002f5","0\u002f5"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,20.0,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"gpt-5.5\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#8b5cf6"},"name":"gpt-5.5","text":["0\u002f5","0\u002f5","0\u002f5","0\u002f5","448\u002f448","0\u002f5","0\u002f5","0\u002f5"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,100.0,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"gemini-2.5-pro\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#ec4899"},"name":"gemini-2.5-pro","text":["0\u002f50","0\u002f50","0\u002f50","0\u002f50","379\u002f448","0\u002f50","0\u002f50","0\u002f50"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,84.59821428571429,0.0,0.0,0.0],"type":"bar"},{"hovertemplate":"gpt-5.4\u003cbr\u003e%{x}: %{text} (%{y:.1f}%)\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#3b82f6"},"name":"gpt-5.4","text":["0\u002f5","0\u002f5","0\u002f5","0\u002f5","446\u002f448","0\u002f5","0\u002f5","0\u002f5"],"textposition":"outside","x":["face_grid","compact_string","corner_cubies","piece_identity","move_sequence","natural_language","perm_orient","cycle_notation"],"y":[0.0,0.0,0.0,0.0,99.55357142857143,0.0,0.0,0.0],"type":"bar"}],                        {"template":{"data":{"histogram2dcontour":[{"type":"histogram2dcontour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"choropleth":[{"type":"choropleth","colorbar":{"outlinewidth":0,"ticks":""}}],"histogram2d":[{"type":"histogram2d","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"heatmap":[{"type":"heatmap","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"contourcarpet":[{"type":"contourcarpet","colorbar":{"outlinewidth":0,"ticks":""}}],"contour":[{"type":"contour","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"surface":[{"type":"surface","colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]}],"mesh3d":[{"type":"mesh3d","colorbar":{"outlinewidth":0,"ticks":""}}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"parcoords":[{"type":"parcoords","line":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolargl":[{"type":"scatterpolargl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"scattergeo":[{"type":"scattergeo","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterpolar":[{"type":"scatterpolar","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"scattergl":[{"type":"scattergl","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatter3d":[{"type":"scatter3d","line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermap":[{"type":"scattermap","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattermapbox":[{"type":"scattermapbox","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scatterternary":[{"type":"scatterternary","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"scattercarpet":[{"type":"scattercarpet","marker":{"colorbar":{"outlinewidth":0,"ticks":""}}}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"white","linecolor":"white","minorgridcolor":"white","startlinecolor":"#2a3f5f"},"type":"carpet"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}],"barpolar":[{"marker":{"line":{"color":"#E5ECF6","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"pie":[{"automargin":true,"type":"pie"}]},"layout":{"autotypenumbers":"strict","colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"hovermode":"closest","hoverlabel":{"align":"left"},"paper_bgcolor":"white","plot_bgcolor":"#E5ECF6","polar":{"bgcolor":"#E5ECF6","angularaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"radialaxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"ternary":{"bgcolor":"#E5ECF6","aaxis":{"gridcolor":"white","linecolor":"white","ticks":""},"baxis":{"gridcolor":"white","linecolor":"white","ticks":""},"caxis":{"gridcolor":"white","linecolor":"white","ticks":""}},"coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]]},"xaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"yaxis":{"gridcolor":"white","linecolor":"white","ticks":"","title":{"standoff":15},"zerolinecolor":"white","automargin":true,"zerolinewidth":2},"scene":{"xaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"yaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2},"zaxis":{"backgroundcolor":"#E5ECF6","gridcolor":"white","linecolor":"white","showbackground":true,"ticks":"","zerolinecolor":"white","gridwidth":2}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"geo":{"bgcolor":"white","landcolor":"#E5ECF6","subunitcolor":"white","showland":true,"showlakes":true,"lakecolor":"white"},"title":{"x":0.05},"mapbox":{"style":"light"}}},"xaxis":{"title":{"text":"Representation"},"gridcolor":"#334155"},"yaxis":{"title":{"text":"Solve rate (%)"},"range":[0,115],"gridcolor":"#334155"},"font":{"color":"#e2e8f0"},"title":{"text":"Cross-model comparison — total solve rate by representation"},"barmode":"group","height":420,"plot_bgcolor":"#0f172a","paper_bgcolor":"#1e293b"},                        {"responsive": true}                    )                };            </script>        </div>
 <div class="tab-bar">
