@@ -31,6 +31,8 @@ Move vocabulary (18 moves = 6 faces × 3 quarter turns):
          B=9, B'=10, B2=11, L=12, L'=13, L2=14, R=15, R'=16, R2=17
 """
 
+from __future__ import annotations
+
 import numpy as np # pyright: ignore[reportMissingImports]
 from typing import Optional
 

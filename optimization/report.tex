@@ -42,10 +42,10 @@ three learning rate schedules (cosine annealing, constant, step decay), conduct
 a hyperparameter sensitivity analysis over model width and weight decay, analyze
 the quality of the learned distance heuristic relative to BFS ground truth, and
 visualize the loss landscape via filter-normalized random directions~\cite{li2018landscape}.
-AdamW and Adam converge to nearly identical accuracy ($\approx$80\%), while SGD
-trails by 5.5 percentage points; cosine annealing outperforms step decay and
-constant schedules by up to 3.2~pp; and weight decay provides no benefit on this
-clean combinatorial task.
+Over three random seeds, AdamW and Adam converge to $78.3\!\pm\!1.0$\% and
+$78.9\!\pm\!0.2$\%, respectively, while SGD trails by $\sim$4.5~pp ($74.4\!\pm\!0.0$\%);
+cosine annealing outperforms step and constant schedules by $\sim$1~pp; and
+weight decay provides no benefit on this clean combinatorial task.
 The learned heuristic achieves perfect accuracy at distances 0--2 but degrades
 sharply for harder states, overestimating 12.5\% of the time and therefore
 violating the admissibility condition required for A* optimality guarantees.
@@ -352,32 +352,31 @@ $\eta_0 = 10^{-3}$.
   \includegraphics[width=\linewidth]{optimizer_comparison}
   \caption{Validation accuracy (left) and loss (right) over 30 training epochs
     for AdamW, Adam, and SGD with momentum, all under cosine annealing.
-    AdamW and Adam converge to nearly identical final accuracy (79.9\% and
-    79.8\%), while SGD trails by 5.5 pp (74.4\%).}
+    Mean $\pm$ std over 3 seeds: AdamW $78.3\!\pm\!1.0$\%, Adam
+    $78.9\!\pm\!0.2$\%, SGD $74.4\!\pm\!0.0$\%.}
   \label{fig:optimizer}
 \end{figure}
 
-Figure~\ref{fig:optimizer} shows the convergence curves. AdamW and Adam reach
-essentially the same final accuracy---79.9\% and 79.8\%, respectively, a
-difference well within noise---while SGD with momentum reaches only 74.4\%.
-The negligible gap between AdamW and Adam indicates that \emph{decoupled
-weight decay provides no meaningful advantage on this task}: whether regularization
-interacts with the adaptive step size (Adam) or is applied independently (AdamW)
-does not affect outcomes. This is consistent with our later finding that weight
-decay has minimal effect overall (Section~\ref{sec:hyperparam}).
+Figure~\ref{fig:optimizer} shows the convergence curves for a single representative
+seed; Table~\ref{tab:multiseed} reports mean $\pm$ std over three seeds.
+Adam achieves a slightly higher mean (78.9\%) than AdamW (78.3\%), but the
+0.6~pp gap is well within AdamW's seed-to-seed spread ($\pm$1.0~pp), confirming
+that \emph{decoupled weight decay provides no meaningful advantage on this task}.
+Notably, Adam's near-zero variance ($\pm$0.2~pp) suggests its gradient-moment
+estimates produce a more deterministic optimization trajectory on this structured
+problem, while AdamW's slightly higher variance may reflect the interaction
+between decoupled weight decay and random initialization.
+Both adaptive methods leave SGD well behind: SGD reaches only 74.4\%---a
+$\sim$4.5~pp deficit---with essentially zero variance across seeds ($\pm$0.0~pp),
+indicating it converges reliably but to a shallower minimum.
 
-The 5.5~pp advantage of adaptive methods over SGD most likely stems from the
-heterogeneous gradient magnitudes present in early training. Cube states at
-rare distances ($d = 0$--2 and $d = 10$--11) are far fewer than those at common
-distances, so the class-weighted loss produces very different gradient scales
-across output neurons. Per-parameter adaptive step sizes in Adam/AdamW
-automatically compensate for this variation, effectively giving each parameter
-its own learning rate calibrated to its recent gradient history. SGD with a
-single global rate cannot adapt to this structure, leading to slower convergence
-or convergence to a shallower minimum.
+The advantage of adaptive methods over SGD most likely stems from the
+heterogeneous gradient magnitudes induced by class-weighted loss on the unbalanced
+distance distribution. Per-parameter adaptive step sizes in Adam/AdamW
+automatically compensate for this variation; SGD with a single global rate
+cannot, leading to slower convergence or a shallower minimum.
 Notably, SGD still reaches 74.4\%---well above the 8.3\% random baseline---
-indicating the landscape is not pathologically ill-conditioned; SGD simply
-converges more slowly within 30 epochs.
+indicating the landscape is not pathologically ill-conditioned.
 
 \subsection{Learning Rate Schedule Ablation}
 \label{sec:schedule}
@@ -391,33 +390,52 @@ a constant schedule.
   \includegraphics[width=\linewidth]{schedule_comparison}
   \caption{Validation accuracy (left), loss (center), and learning rate
     trajectory (right) for three schedules under AdamW. Cosine annealing
-    (80.1\%) outperforms step decay (76.9\%) and constant (77.9\%).}
+    Mean $\pm$ std over 3 seeds: cosine $78.3\!\pm\!1.0$\%, step $77.5\!\pm\!1.3$\%, constant $77.2\!\pm\!1.0$\%.}
   \label{fig:schedule}
 \end{figure}
 
-Figure~\ref{fig:schedule} shows that cosine annealing achieves the best
-accuracy (80.1\%), outperforming step decay by 3.2~pp and constant by 2.2~pp.
+Table~\ref{tab:multiseed} shows that across three seeds cosine annealing
+achieves the best mean accuracy (78.3\%), outperforming step decay (77.5\%) and
+constant (77.2\%) by 0.8~pp and 1.1~pp respectively.
 The smooth monotone decay of the cosine schedule allows the optimizer to
-progressively tighten its updates as training proceeds, refining the solution
-without abrupt disruptions. The constant schedule, by contrast, continues
-applying large steps near the end of training, preventing precise convergence
-to the local minimum.
+progressively tighten its updates, refining the solution without abrupt
+disruptions. Step decay drops the learning rate to $0.3^3 \approx 2.7\%$ of
+its initial value by epoch 30---a $\sim37\times$ reduction---which may be
+excessively aggressive; the constant schedule maintains more exploratory
+capacity but cannot exploit the low-LR refinement phase. The cosine schedule
+avoids both failure modes.
 
-Surprisingly, constant slightly outperforms step decay (77.9\% vs.\ 76.9\%).
-Step decay drops the learning rate to $0.3^3 \approx 2.7\%$ of its initial
-value by epoch 30---a factor of $\sim37\times$ reduction---which may be
-excessively aggressive. After the drop at epoch 20, the optimizer's effective
-step size is too small to recover from any suboptimal positioning, whereas
-the constant schedule maintains more exploratory capacity throughout. The
-cosine schedule avoids both failure modes: it reaches a low final LR smoothly
-but spends more time at intermediate rates where the optimizer can still make
-meaningful progress.
+Importantly, all three schedules fall within each other's one-standard-deviation
+bands (spread $\leq$1.1~pp vs.\ within-schedule std of $\sim$1~pp), so the
+ordering should be treated as a trend rather than a statistically robust
+separation. The single-seed ordering in Figure~\ref{fig:schedule} differs from
+the multi-seed means---a reminder that individual runs are noisy at this scale.
+In contrast, the optimizer spread ($\sim$4.5~pp, Table~\ref{tab:multiseed})
+clearly dominates the schedule spread (1.1~pp), indicating that optimizer
+choice is the more impactful decision for this task.
 
-The schedule effect (3.2~pp spread between best and worst) is of comparable
-magnitude to the optimizer effect (5.5~pp spread), suggesting that schedule
-choice matters as much as the choice of optimizer for this task---a finding
-with practical implications for training small models on structured combinatorial
-problems.
+\begin{table}[h]
+  \centering
+  \caption{Multi-seed validation accuracy (mean $\pm$ std over 3 seeds, 30
+    epochs each). AdamW and cosine are shared between the two comparisons.}
+  \label{tab:multiseed}
+  \smallskip
+  \begin{tabular}{lcccc}
+    \toprule
+    Configuration & Seed 0 & Seed 1 & Seed 2 & Mean $\pm$ Std \\
+    \midrule
+    \multicolumn{5}{l}{\textit{Optimizer comparison (cosine annealing)}} \\
+    AdamW & 78.1\% & 79.7\% & 77.1\% & $78.3 \pm 1.0$\,pp \\
+    Adam  & 79.1\% & 78.8\% & 78.6\% & $78.9 \pm 0.2$\,pp \\
+    SGD   & 74.4\% & 74.4\% & 74.4\% & $74.4 \pm 0.0$\,pp \\
+    \midrule
+    \multicolumn{5}{l}{\textit{Schedule ablation (AdamW)}} \\
+    Cosine   & 78.1\% & 79.7\% & 77.1\% & $78.3 \pm 1.0$\,pp \\
+    Step     & 77.9\% & 78.9\% & 75.8\% & $77.5 \pm 1.3$\,pp \\
+    Constant & 76.7\% & 78.6\% & 76.4\% & $77.2 \pm 1.0$\,pp \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Hyperparameter Sensitivity}
 \label{sec:hyperparam}
@@ -639,12 +657,13 @@ unusually clean attribution of optimization behavior to algorithm and
 hyperparameter choices rather than to confounds from task difficulty.
 
 Five main findings emerge.
-First, \textbf{adaptive learning rates are essential}: AdamW and Adam converge
-to $\sim$80\% accuracy, while SGD trails by 5.5~pp, due to the heterogeneous
-gradient magnitudes induced by class-weighted loss on an unbalanced distance
-distribution.
-Second, \textbf{cosine annealing provides meaningful benefit} (3.2~pp over step
-decay), with schedule choice mattering as much as optimizer choice.
+First, \textbf{adaptive learning rates are essential}: over 3 seeds, AdamW and
+Adam reach $78.3\!\pm\!1.0$\% and $78.9\!\pm\!0.2$\%, respectively, while SGD
+trails by $\sim$4.5~pp ($74.4\!\pm\!0.0$\%), due to the heterogeneous gradient
+magnitudes induced by class-weighted loss on an unbalanced distance distribution.
+Second, \textbf{cosine annealing outperforms step and constant schedules, but
+the effect is modest} ($\sim$1.1~pp spread across schedules vs.\ $\sim$4.5~pp
+across optimizers); schedule choice is secondary to optimizer choice on this task.
 Third, \textbf{the task is largely insensitive to regularization}: weight decay
 offers no benefit and no decay performs best, reflecting the clean, noise-free
 nature of BFS-derived labels.
@@ -665,9 +684,10 @@ grokking-style phase transition is observed, and why SGD---despite slower
 convergence---eventually finds a nearly equivalent solution.
 
 \paragraph{Limitations.}
-Each configuration was run once without a fixed random seed, so reported
-accuracies carry uncalibrated variance ($\pm$1--2~pp estimated from the
-Adam/AdamW near-tie). All experiments use the 2$\times$2$\times$2 cube; the
+Optimizer and schedule comparisons were repeated over 3 random seeds
+(Table~\ref{tab:multiseed}); hyperparameter sweeps and heuristic evaluations
+each use a single seed, so those results carry $\pm$1~pp estimated variance.
+All experiments use the 2$\times$2$\times$2 cube; the
 3$\times$3$\times$3 has a state space of $\sim$$4.3 \times 10^{19}$ and
 God's number 26, where BFS is infeasible and the class imbalance problem
 becomes far more severe.
