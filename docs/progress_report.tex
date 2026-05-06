@@ -26,7 +26,7 @@
 % ============================================================
 \begin{abstract}
 % ============================================================
-We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully-enumerable
+We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully enumerable
 domain for mechanistic interpretability.  A small transformer
 ($d_\text{model}{=}128$, 4 layers, ${\sim}200\text{k}$ parameters) is trained to
 classify the optimal half-turn-metric distance to solved (0--11), achieving
@@ -393,7 +393,11 @@ A successful response is a bare move string (\texttt{B' L2 U}); a typical failur
 response either hallucinates an invalid sequence or returns a lengthy explanation
 before an incorrect move string.  Solutions are validated by applying the proposed
 move sequence to the scrambled state in the cube simulator and checking
-\texttt{is\_solved()}.
+\texttt{is\_solved()}, which accepts any of the 24 rotationally equivalent
+solved orientations as correct.  This differs from the supervised distance
+target, which measures distance to a single fixed \texttt{SOLVED\_STATE};
+a response that leaves the cube in a different but physically solved orientation
+would count as correct here but would receive distance $> 0$ under the BFS table.
 
 % ============================================================
 \section{Experiments and Results}
@@ -862,7 +866,7 @@ partial cube understanding, which would require a graded scoring scheme.
 % ============================================================
 
 We have applied thirteen interpretability analyses to a small transformer trained
-on the $2{\times}2{\times}2$ Rubik's cube, a fully-enumerable domain that enables
+on the $2{\times}2{\times}2$ Rubik's cube, a fully enumerable domain that enables
 ground-truth validation of mechanistic claims.  The main findings are:
 
 \textbf{The model's core circuit is simple.}  Optimal distance is encoded nearly
