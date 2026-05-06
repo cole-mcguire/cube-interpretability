@@ -387,8 +387,7 @@ hr { border: none; border-top: 1px solid #334155; }
   border: 1px solid #334155;
   border-radius: 6px;
   padding: 12px 16px;
-  margin: 14px 0 6px;
-  max-width: 780px;
+  margin-bottom: 14px;
 }
 .path-section h3 {
   font-size: 12px;
@@ -451,19 +450,6 @@ hr { border: none; border-top: 1px solid #334155; }
     every internal representation can be probed exhaustively.
     Use the visualizer below to scramble and step through BFS-optimal solutions.
   </p>
-  <div class="path-section">
-    <h3>Recommended reading path</h3>
-    <ol>
-      <li>Try the visualizer below — scramble the cube and watch the distance-classifier update.</li>
-      <li><a href="probe_results.html">Phase 4 — Probing</a> — which features are linearly decodable, and where?</li>
-      <li><a href="phase5a_results.html">Phase 5a — Patching</a> — which of those features are causally used?</li>
-      <li><a href="circuit_results.html">Phase 7 — Circuit</a> — what components actually carry the distance signal?</li>
-      <li><a href="superposition_results.html">Phase 11 — Superposition</a> — are features packed above dimensionality?</li>
-      <li><a href="llm_eval_results.html">LLM Eval</a> — can pre-trained LLMs solve scrambles from text alone?</li>
-      <li><a href="progress_report.pdf">Final Report ↗</a> — complete write-up covering all 13 analyses.</li>
-    </ol>
-  </div>
-
   <div class="track-header">Track A — <span>Mechanistic Interpretability</span></div>
   <div id="findings">
     <div class="finding-card">
@@ -555,6 +541,18 @@ hr { border: none; border-top: 1px solid #334155; }
   </div><!-- #left-col -->
 
   <section id="log-section">
+    <div class="path-section">
+      <h3>Recommended reading path</h3>
+      <ol>
+        <li>Try the visualizer — scramble and watch the classifier update.</li>
+        <li><a href="probe_results.html">Phase 4 — Probing</a> — what's linearly decodable?</li>
+        <li><a href="phase5a_results.html">Phase 5a — Patching</a> — what's causally used?</li>
+        <li><a href="circuit_results.html">Phase 7 — Circuit</a> — what carries the distance signal?</li>
+        <li><a href="superposition_results.html">Phase 11 — Superposition</a> — features above dimensionality?</li>
+        <li><a href="llm_eval_results.html">LLM Eval</a> — can LLMs solve from text alone?</li>
+        <li><a href="progress_report.pdf">Final Report ↗</a> — full write-up, all 13 analyses.</li>
+      </ol>
+    </div>
     <div id="log-inner">
       <div class="log-header">
         <span class="section-label">Log</span>
