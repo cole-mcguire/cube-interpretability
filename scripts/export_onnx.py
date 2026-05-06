@@ -33,6 +33,9 @@ def export(checkpoint: Path, out: Path) -> None:
     print(f"  Output shape: {logits.shape}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
+    # dynamo=False forces the legacy TorchScript exporter, which embeds weights
+    # inline in the protobuf. The newer dynamo exporter (PyTorch ≥2.x default)
+    # produces a skeleton without raw_data, which onnxruntime-web cannot run.
     torch.onnx.export(
         model,
         dummy,
@@ -41,6 +44,7 @@ def export(checkpoint: Path, out: Path) -> None:
         output_names=["logits"],
         dynamic_axes={"state": {0: "batch"}, "logits": {0: "batch"}},
         opset_version=17,
+        dynamo=False,
     )
     size_kb = out.stat().st_size / 1024
     print(f"Wrote {out}  ({size_kb:.0f} KB)")
