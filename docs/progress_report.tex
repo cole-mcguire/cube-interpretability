@@ -181,8 +181,11 @@ sticker positions, not hard-coded.  This ensures correctness and makes adding
 additional cube sizes straightforward.
 
 Optimal distances are precomputed by BFS from all 24 rotationally equivalent
-solved states, producing a table of $88{,}179{,}840$ states mapping
-\texttt{state.tobytes()} $\to$ distance.  Seeding from all 24 orientations
+solved states, producing a table of $88{,}179{,}840$ state-orientation entries
+mapping \texttt{state.tobytes()} $\to$ distance; this corresponds to
+${\approx}3.7\text{M}$ distinct physical positions ($88\text{M} / 24$
+orientations), making the domain \emph{fully enumerable}---every reachable
+state has an exact ground-truth label.  Seeding from all 24 orientations
 removes orientation bias: the solver finds the shortest path to \emph{any}
 solved orientation.  BFS takes approximately 25 minutes and is cached to disk.
 
@@ -207,7 +210,9 @@ Training uses AdamW ($\text{lr}{=}3{\times}10^{-4}$, $\text{wd}{=}0.01$) with
 cosine annealing over 30 epochs, class-weighted cross-entropy to compensate for
 the heavy distance-distribution imbalance (distance 1 has 18 states; distance 9
 has $\sim$14M).  The dataset contains 50k/5k/5k train/val/test scramble
-sequences (${\sim}300\text{k}$ samples each).
+sequences (${\sim}300\text{k}$ samples each), covering roughly 8\% of the
+${\approx}3.7\text{M}$ distinct physical positions for training and 0.8\% for
+validation.
 
 \subsection{Probing and Causal Analysis}
 
@@ -305,10 +310,14 @@ features must compete for the limited representational budget.
 
 \paragraph{Corner-tokenized architecture.}
 
-To enable non-degenerate attention, we implement \texttt{CubeTransformerCorner}:
-the 24 stickers are partitioned by corner cubie, yielding 8 tokens of 18
-dimensions each ($3\ \text{stickers} \times 6\ \text{colors}$, one-hot).  All
-other hyperparameters match the flat model.  We train under identical conditions
+To enable non-degenerate attention, we implement \texttt{CubeTransformerCorner}.
+(\emph{Degenerate} refers to the flat model's single-token case: with one input
+token, self-attention produces a trivial $1{\times}1$ matrix equal to $[[1.0]]$
+--- the token attends only to itself, so the attention sublayer carries zero
+inter-token information.)  The 24 stickers are partitioned by corner cubie,
+yielding 8 tokens of 18 dimensions each
+($3\ \text{stickers} \times 6\ \text{colors}$, one-hot).  All other
+hyperparameters match the flat model.  We train under identical conditions
 and extract $8 \times 8$ attention weight matrices at each layer, stratified by
 optimal distance, to test whether the model attends selectively to misplaced
 cubies.
@@ -362,9 +371,28 @@ representations are tested: \texttt{face\_grid}, \texttt{compact\_string},
 Seven models are evaluated via their provider APIs: GPT-5.5, GPT-5.4, Gemini 2.5
 Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-4o, and Llama 3.3 70B.  We run 100
 cases per distance level ($d \in \{3, 5, 7, 9, 11\}$) for \texttt{move\_sequence}
-and 10 cases per distance level for all state-based representations.  All prompts
-prohibit code.  Solutions are validated by applying the proposed move sequence to
-the scrambled state in the cube simulator and checking \texttt{is\_solved()}.
+and 10 cases per distance level for all state-based representations.
+
+Each trial uses a fixed system prompt instructing the model to output \emph{only}
+a move sequence (``Respond with ONLY the solution move sequence, moves separated
+by spaces. No explanation. No extra text.''), followed by a one-shot user message
+containing a solved-state example for the given representation and then the target
+scrambled state.  The system prompt explicitly prohibits code and pseudocode.  A
+representative \texttt{compact\_string} prompt for the scramble
+\texttt{U' L2 B} ($d{=}3$, solution \texttt{B' L2 U}) looks like:
+
+\begin{quote}\small
+\textbf{[one-shot example — solved state]}\\
+\texttt{U:WWWW D:YYYY F:GGGG B:BBBB L:OOOO R:RRRR}\\[2pt]
+\textbf{Now solve this cube:}\\
+\texttt{U:GRYW D:WYOB F:BORG B:BROG L:WOYB R:GYRW}
+\end{quote}
+
+A successful response is a bare move string (\texttt{B' L2 U}); a typical failure
+response either hallucinates an invalid sequence or returns a lengthy explanation
+before an incorrect move string.  Solutions are validated by applying the proposed
+move sequence to the scrambled state in the cube simulator and checking
+\texttt{is\_solved()}.
 
 % ============================================================
 \section{Experiments and Results}
