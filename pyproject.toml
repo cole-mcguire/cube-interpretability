@@ -1,5 +1,5 @@
 [project]
-name = "cube-simulator"
+name = "cube-interpretability"
 version = "0.2.0"
 description = "Mechanistic interpretability of a small transformer trained on 2x2x2 Rubik's Cube optimal-distance classification — linear probing, activation patching, tuned lens, sparse autoencoders, BFS optimal solver, and interactive 3D visualizer"
 requires-python = ">=3.10"
@@ -10,13 +10,17 @@ dependencies = [
     "scikit-learn>=1.3.0",
     "plotly>=5.0.0",
     "kaleido>=1.2.0",
+    "onnxscript>=0.7.0",
+    "onnx>=1.21.0",
+    "matplotlib>=3.10.9",
+]
+
+[project.optional-dependencies]
+llm = [
     "anthropic>=0.96.0",
     "groq>=0.11.0",
     "google-genai>=1.0.0",
     "openai>=1.0.0",
-    "onnxscript>=0.7.0",
-    "onnx>=1.21.0",
-    "matplotlib>=3.10.9",
 ]
 
 [project.scripts]
@@ -40,6 +44,17 @@ build-backend = "hatchling.build"
 "interp/patch.py" = "interp/patch.py"
 "interp/tuned_lens.py" = "interp/tuned_lens.py"
 "interp/sae.py" = "interp/sae.py"
+"interp/circuit.py" = "interp/circuit.py"
+"interp/weights.py" = "interp/weights.py"
+"interp/grokking.py" = "interp/grokking.py"
+"interp/next_move.py" = "interp/next_move.py"
+"interp/next_move_analysis.py" = "interp/next_move_analysis.py"
+"interp/superposition.py" = "interp/superposition.py"
+"interp/corner_analysis.py" = "interp/corner_analysis.py"
+"interp/corner_attn.py" = "interp/corner_attn.py"
+"interp/corner_circuit.py" = "interp/corner_circuit.py"
+"interp/neuron_profile.py" = "interp/neuron_profile.py"
+"interp/export_paper_figures.py" = "interp/export_paper_figures.py"
 [dependency-groups]
 dev = [
     "jupyter>=1.1.1",

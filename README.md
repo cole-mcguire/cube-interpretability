@@ -9,6 +9,24 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 
 **Final report:** [`docs/progress_report.pdf`](docs/progress_report.pdf) (source: [`docs/progress_report.tex`](docs/progress_report.tex)).
 
+## TL;DR results
+
+| Finding | Result |
+|---------|--------|
+| Distance classification accuracy | **78.5%** val (random baseline 8.3%) |
+| Linear probes | `face_solved` decodable ≥98% at every layer; distance MAE drops from 0.87 → 0.40 |
+| Causal patching | Swapping full residual stream between distance classes flips predictions at 100% — distance is linearly encoded in the embedding before any block runs |
+| Circuit | `mlp_0` dominates (DLA +5.6); attention heads contribute negatively; ≤10 neurons explain most of the signal |
+| Superposition | No evidence of classical superposition — SAE R² ≥0.999 at 1× expansion; representations are near-orthogonal |
+| LLM eval | All 7 state-based representations score **0%** across 7 models and all distances; only `move_sequence` (trivial inversion) varies (GPT-5.x: 100%, Claude/GPT-4o: 32–48%) |
+| Corner model | 76.2% accuracy; L0 heads are critical (ablating L0H1 drops 44.9 pp); attention sharpens monotonically with scramble depth |
+
+**Start here:**
+- **Interpretability results** → [website](https://cole-mcguire.github.io/cube-interpretability) or `docs/probe_results.html`, `docs/circuit_results.html`
+- **LLM evaluation results** → `docs/llm_eval_results.html`
+- **Full write-up** → `docs/progress_report.pdf`
+- **Interactive cube + solver** → `docs/index.html` or `uv run cube-visualizer`
+
 ## What this project does
 
 1. **Simulates** a 2×2×2 cube with a one-hot state encoding (24 stickers × 6 colors = 144-dim vector)
@@ -160,6 +178,9 @@ Requires [uv](https://docs.astral.sh/uv/).
 # Install dependencies
 uv sync
 
+# Run unit tests (cube simulator + BFS correctness)
+uv run cube-tests
+
 # Generate dataset (computes BFS distances on first run, ~25–30 min; cached afterward)
 uv run cube-dataset
 
@@ -232,7 +253,7 @@ Each `.npz` split contains:
 | Key | Shape | Description |
 |-----|-------|-------------|
 | `states` | `(N, 144)` float32 | One-hot encoded cube state |
-| `optimal_distance` | `(N,)` int8 | BFS distance to solved (0–10) |
+| `optimal_distance` | `(N,)` int8 | BFS distance to solved (0–11) |
 | `next_moves` | `(N,)` int64 | Move applied to reach this state |
 | `scramble_depth` | `(N,)` int32 | Steps from solved in the scramble sequence |
 | `face_solved` | `(N, 6)` bool | Per-face solved status |
@@ -351,6 +372,14 @@ Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion
 - Layer 0 dominates: ablating L0H1 drops accuracy by **44.9 pp** (76.2% → 31.3%), L0H0 by **30.7 pp**, L0H2 by **25.1 pp**; all L1–L3 heads are individually small (≤7.7 pp drop)
 - The three critical L0 heads are also the sharpest: sharpness scores 0.760, 0.495, 0.701 (mean max attention weight) vs. the relatively diffuse L0H3 (0.570) and near-uniform L1–L3 heads
 - Specialization analysis (U-layer: UFR,UFL,UBL,UBR vs D-layer: DFR,DFL,DBL,DBR) reveals which heads exhibit within-layer vs cross-layer routing preferences, surfacing geometric structure in the inter-cubie attention circuit
+
+## Reproducibility notes
+
+- **BFS distance table** (`data/distances.npz`, ~760 MB) is gitignored. Regenerate with `uv run cube-dataset` (~25–30 min, ~8 GB peak RAM). The table is memory-mapped on subsequent loads (~0.1 s, `O(log N)` lookup via `np.searchsorted`).
+- **Model checkpoints** (`checkpoints/best.pt`) are gitignored. Regenerate with `uv run cube-train` (~30 epochs, ~5 min on MPS/GPU). The corner model and next-move model require separate training runs (see Quickstart).
+- **LLM evaluation API keys** are not committed. Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, and `GROQ_API_KEY` as environment variables before running `test_representations.py`. Results are cached in `data/llm_eval_cache.json` so re-runs are free.
+- **LLM eval cost warning**: running the full automated eval (7 models × 8 reps × 100 cases/distance) incurs non-trivial API costs. The cached results in `data/llm_eval_cache.json` cover the full run; use them instead of re-running.
+- **Move geometry** is generated from face normal vectors at startup (not hand-coded), so adding new cube sizes only requires changing the face list.
 
 ## References
 
