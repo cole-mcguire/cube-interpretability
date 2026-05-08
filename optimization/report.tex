@@ -333,8 +333,10 @@ is being varied, the default optimizer is AdamW with $\eta_0 = 10^{-3}$,
 $\lambda = 10^{-4}$, and cosine annealing with $\eta_\text{min} = 5 \times 10^{-5}$.
 Each configuration is trained once from a random initialization; result caching
 ensures reproducibility from saved JSON histories. All experiments are
-reproduced end-to-end in \texttt{optimization\_experiments.ipynb}, which loads
-cached JSON results and regenerates every figure in this report.
+reproduced end-to-end in \texttt{optimization\_experiments.ipynb}, which is
+fully self-contained: it generates the BFS distance table, dataset, and all
+training runs from scratch, caching intermediate results to \texttt{results/}
+to avoid redundant computation on kernel restart.
 Training ran on Apple Silicon GPU (MPS) and took approximately 2--3 minutes
 per 30-epoch run.
 Because the class-weighted loss uses inverse-frequency weights normalized across
