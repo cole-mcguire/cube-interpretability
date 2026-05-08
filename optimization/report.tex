@@ -332,8 +332,11 @@ labels provided by exact BFS. The default configuration is $d_\text{model} = 128
 is being varied, the default optimizer is AdamW with $\eta_0 = 10^{-3}$,
 $\lambda = 10^{-4}$, and cosine annealing with $\eta_\text{min} = 5 \times 10^{-5}$.
 Each configuration is trained once from a random initialization; result caching
-ensures reproducibility from saved JSON histories. Training ran on Apple Silicon
-GPU (MPS) and took approximately 2--3 minutes per 30-epoch run.
+ensures reproducibility from saved JSON histories. All experiments are
+reproduced end-to-end in \texttt{optimization\_experiments.ipynb}, which loads
+cached JSON results and regenerates every figure in this report.
+Training ran on Apple Silicon GPU (MPS) and took approximately 2--3 minutes
+per 30-epoch run.
 Because the class-weighted loss uses inverse-frequency weights normalized across
 classes, its absolute scale is not directly comparable to standard unweighted
 cross-entropy; we therefore interpret validation loss primarily through relative
@@ -445,6 +448,37 @@ choice is the more impactful decision for this task.
     \bottomrule
   \end{tabular}
 \end{table}
+
+\subsection{Training Dynamics}
+\label{sec:dynamics}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.72\linewidth]{training_dynamics}
+  \caption{Per-epoch validation accuracy (mean $\pm$ std shading over 3 seeds)
+    for AdamW, Adam, and SGD with momentum under cosine annealing.
+    All three optimizers converge smoothly and monotonically---no sudden
+    generalization jump or grokking-style phase transition is observed.
+    SGD lags throughout but narrows the gap in later epochs as the schedule
+    reduces the learning rate.}
+  \label{fig:dynamics}
+\end{figure}
+
+Figure~\ref{fig:dynamics} shows the per-epoch validation accuracy for all three
+optimizers across 30 epochs and 3 seeds.
+Convergence is smooth and monotone for all configurations: accuracy rises
+steadily from epoch 1 through epoch 30, with no evidence of the delayed
+generalization (grokking) reported by Power et al.~\cite{power2022grokking}
+on modular arithmetic tasks.
+The absence of a phase transition is consistent with the flat loss landscape
+described in Section~\ref{sec:landscape}: in a wide, shallow basin, the
+optimizer descends continuously without encountering the sharp geometry
+that can produce sudden generalization.
+Adam and AdamW track closely throughout, while SGD converges more slowly
+in early epochs---its per-parameter step size is not adapted to the
+heterogeneous gradient magnitudes from class-weighted loss---but closes
+somewhat in later epochs as cosine annealing brings all schedules to a
+similar small learning rate.
 
 \subsection{Hyperparameter Sensitivity}
 \label{sec:hyperparam}
@@ -560,6 +594,32 @@ optimal solutions for many near- and mid-distance states.
 A key direction for future work is filtering the search with the heuristic on
 near-solved states (where it is reliable) and falling back to BFS for states
 near God's number (where it fails).
+
+Figure~\ref{fig:overestimation} disaggregates the overestimation rate by true
+distance class, revealing that inadmissibility is not uniformly distributed.
+Overestimation is negligible at $d = 0$--3, peaks at $d = 5$--6 (53\% and 54\%
+respectively), then \emph{falls to zero} for $d = 8$--10. This pattern is
+consistent with the model's tendency to anchor on mid-range distances: states
+close to solved are unambiguous and states deep in scramble-space are
+systematically underestimated (admissible). The inadmissible zone at $d = 4$--7
+is precisely where the model is most confused between adjacent distance classes,
+and a small bias toward higher predictions becomes costly for admissibility.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\linewidth]{overestimation}
+  \caption{Per-distance admissibility breakdown (left) and overestimation rate
+    (right) for the AdamW + cosine model.
+    \textbf{Left:} stacked bars show the fraction of validation examples at each
+    true distance $d^*$ that are correctly predicted, overestimated
+    ($\hat{d} > d^*$, inadmissible), or underestimated ($\hat{d} < d^*$,
+    admissible).
+    \textbf{Right:} the overestimation rate peaks at $d = 5$--6 ($>50\%$) and
+    drops to zero for $d = 8$--10; the dashed line marks the overall rate of
+    12.5\%.  Inadmissibility is concentrated in the mid-range distance classes
+    where classification is most uncertain.}
+  \label{fig:overestimation}
+\end{figure}
 
 \subsection{A* Search Deployment}
 \label{sec:astar}
