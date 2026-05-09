@@ -827,10 +827,11 @@ with the distance classifier.  Its top-1 accuracy of 6.3\% barely exceeds the
 F$'$ bias (22.4\% predicted vs.\ 5.8\% true).  Despite this behavioral failure,
 distance is implicitly encoded in the residual stream (probe MAE 1.01 $\to$ 0.85
 across layers), but at roughly half the quality achievable under direct distance
-supervision (0.87 $\to$ 0.40 in the distance model).  The next-move task is harder:
-the model must distinguish among multiple equally optimal continuations, and
-insufficient training or model capacity leads to mode collapse rather than
-generalization.
+supervision (0.87 $\to$ 0.40 in the distance model).  The next-move task is not a well-posed policy-learning problem in this setup:
+the target is the scramble-generation move, and many histories can lead to the
+same cube state.  The resulting near-random accuracy and mode collapse suggest
+that this weak supervision does not provide enough signal to learn a useful
+policy, even though some distance information remains linearly decodable.
 
 % ============================================================
 \section{Limitations and Roadblocks}
