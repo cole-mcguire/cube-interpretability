@@ -63,7 +63,7 @@ cube-interpretability/
 │
 ├── dataset.py              Generate and save train/val/test splits (.npz)
 ├── model.py                CubeTransformer — TransformerLens HookedRootModule
-│                           d_model=128, n_layers=4, n_heads=4 (~200k params)
+│                           d_model=128, n_layers=4, n_heads=4 (~800k params)
 ├── train.py                AdamW + cosine annealing, class-weighted CE
 │
 ├── interp/                 Post-training interpretability passes (run with python -m interp.<name>)
@@ -240,7 +240,7 @@ Blocks:  TransformerBlock × n_layers
 Head:    LayerNorm → Linear(d_model, 12)
 ```
 
-Default config: `d_model=128, n_layers=4, n_heads=4` (~200k parameters).
+Default config: `d_model=128, n_layers=4, n_heads=4` (~800k parameters).
 
 Note: input is a single token, so attention weights are always 1.0. Computation flows almost entirely through the MLP sublayers. All hook points follow TransformerLens naming, so `model.run_with_cache()` works out of the box.
 
@@ -360,7 +360,7 @@ Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion
 - L0 is anomalous: R² *degrades* above 4× due to training instability (L1 loss diverges at 16×), reflecting L0's much denser activation distribution as the dominant MLP layer
 - L1, L2, L3 show **zero dead features** at every expansion ratio through 8×; L2 and L3 have zero dead even at 16× (2048 features in 128-dim space), meaning every dictionary element gets used and active count scales linearly with expansion
 - There is **no plateau** in active feature count — no identifiable cutoff that would indicate a finite set of "true features" in superposition
-- Conclusion: this model does not exhibit classical superposition. Small size (~200k params, 12 classes) and dense residual streams mean features are not packed above dimensionality; the representations are already near-orthogonal rather than superimposed
+- Conclusion: this model does not exhibit classical superposition. Small size (~800k params, 12 classes) and dense residual streams mean features are not packed above dimensionality; the representations are already near-orthogonal rather than superimposed
 
 **Phase 12 — Corner-tokenized transformer:**
 - Replaces the single 144-dim cube token with 8 per-corner tokens (18-dim each: 3 stickers × 6-color one-hot), making multi-head attention non-degenerate for the first time

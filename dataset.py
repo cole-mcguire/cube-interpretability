@@ -45,7 +45,7 @@ def _get_distances() -> DistanceTable:
         _DISTANCES = DistanceTable.load(_DISTANCES_CACHE)
         print(f"{len(_DISTANCES):,} states")
     else:
-        print("Computing optimal distances via BFS (~25–30 min, cached afterward)...")
+        print("Computing optimal distances via BFS (~10 min, cached afterward)...")
         _DISTANCES = compute_optimal_distances(verbose=True)
         _DISTANCES_CACHE.parent.mkdir(parents=True, exist_ok=True)
         _DISTANCES.save(_DISTANCES_CACHE)
