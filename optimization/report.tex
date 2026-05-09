@@ -186,7 +186,7 @@ $\{0, \ldots, 11\}$.
 We use a small transformer with a single input token. The 144-dim state vector
 is projected to a $d_\text{model}$-dimensional embedding by a learned linear
 layer, passed through $L$ transformer blocks (each with multi-head self-attention
-and an MLP sublayer using ReLU activations), and decoded to 12 logits by a
+and an MLP sublayer using GELU activations), and decoded to 12 logits by a
 final linear head preceded by layer normalization.
 Since there is only one input token, the self-attention sublayers are
 degenerate---attention weights are always 1.0---and computation flows almost
@@ -195,7 +195,7 @@ entirely through the MLP sublayers. In effect, the model is a
 architectural template (residual blocks, layer norm, multi-head projections),
 but expressive power comes entirely from the feedforward sublayers. The default
 configuration is $d_\text{model} = 128$, $L = 4$ layers, $H = 4$ heads,
-yielding approximately 200k trainable parameters.
+yielding approximately 800k trainable parameters.
 
 \subsection{Optimizers}
 
@@ -636,9 +636,9 @@ and a small bias toward higher predictions becomes costly for admissibility.
   \caption{Left: median nodes expanded (log scale, shaded IQR for A*) vs.\
     true optimal distance; the dotted line marks the 10,000-node limit.
     Right: A* solution optimality rate (green), A* search success rate
-    (blue), and Dijkstra success rate (red). Dijkstra fails beyond $d=3$;
-    A* with the learned heuristic remains effective through $d=5$--6 and
-    finds optimal solutions for $d \leq 3$.}
+    (blue), and Dijkstra success rate (red). Dijkstra begins to fail at $d=4$
+    and collapses at $d \geq 6$; A* achieves 100\% success through $d=7$ and
+    finds optimal solutions 70--80\% of the time for $d \leq 7$.}
   \label{fig:astar}
 \end{figure}
 
@@ -658,10 +658,10 @@ the heuristic is too weak to guide the search within the node budget.
 
 \paragraph{Solution optimality.}
 Despite the heuristic being inadmissible overall, A* finds optimal solutions
-75--80\% of the time for $d = 1$--7 and 94\% of the time at $d = 8$.
+70--80\% of the time for $d = 1$--7 and 85\% of the time at $d = 8$.
 The suboptimal solutions arise when the heuristic overestimates intermediate
 states, causing A* to prioritize a slightly longer path over the true shortest route. Notably, the optimality rate does not degrade
-monotonically: $d = 8$ achieves 94\% while $d = 6$--7 achieve 70--75\%,
+monotonically: $d = 8$ achieves 85\% while $d = 6$--7 achieve 70--75\%,
 reflecting the uneven accuracy profile of the heuristic (Table~\ref{tab:heuristic}).
 
 \paragraph{Summary.}
