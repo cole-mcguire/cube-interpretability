@@ -71,7 +71,7 @@ The 2$\times$2$\times$2 Rubik's cube offers a rare controlled setting.
 Its full state space---roughly 3.7 million reachable positions---is small
 enough that the true minimum number of moves to solve any state (the
 \emph{optimal distance}) can be computed exactly via BFS.
-God's number for the 2$\times$2$\times$2 is 11 moves in the half-turn metric~\cite{agostinelli2019deepcubea}.
+God's number for the 2$\times$2$\times$2 is 11 moves in the half-turn metric (14 in the quarter-turn metric)~\cite{agostinelli2019deepcubea}.
 A neural network trained to predict this distance is therefore learning to
 approximate a \emph{known} function with structured geometry:
 distance is 0 at the solved state, changes by at most one under any legal face
@@ -765,7 +765,7 @@ Optimizer and schedule comparisons were repeated over 3 random seeds
 each use a single seed, so those results carry $\pm$1~pp estimated variance.
 All experiments use the 2$\times$2$\times$2 cube; the
 3$\times$3$\times$3 has a state space of $\sim$$4.3 \times 10^{19}$ and
-God's number 26, where BFS is infeasible and the class imbalance problem
+God's number 20 (half-turn metric) / 26 (quarter-turn metric), where BFS is infeasible and the class imbalance problem
 becomes far more severe.
 
 \paragraph{Future directions.}
