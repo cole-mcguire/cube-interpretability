@@ -52,8 +52,9 @@ automated evaluation tests seven pre-trained LLMs (GPT-5.5, GPT-5.4, Gemini 2.5
 Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-4o, Llama 3.3 70B) across eight
 text representations of cube state (100 cases per distance for
 \texttt{move\_sequence}; 10 cases per distance for state-based representations).
-All state-based representations score zero across every model and every distance
-without exception; \texttt{move\_sequence} solve rates range from 32\% (GPT-4o,
+State-based representations score effectively zero across every model and every
+distance (one \texttt{corner\_cubies} case solved out of 1,190 state-based
+trials); \texttt{move\_sequence} solve rates range from 32\% (GPT-4o,
 Claude Opus 4.7) to 100\% (GPT-5.5), stratifying models by notation-parsing
 ability rather than cube understanding.
 \end{abstract}
@@ -188,7 +189,8 @@ orientations), making the domain \emph{fully enumerable}---every reachable
 state has an exact ground-truth label.  Because all dataset states are generated
 by scrambling from that same \texttt{SOLVED\_STATE}, the single-seed BFS gives
 exact ground-truth distances for every sample (distance = moves to restore that
-specific orientation).  BFS takes approximately 25 minutes and is cached to disk.
+specific orientation).  BFS takes approximately 10 minutes with the current chunked vectorized
+implementation and is cached to disk.
 
 \paragraph{Model architecture.}
 
@@ -692,8 +694,9 @@ We ran a large-scale automated evaluation across seven models via their respecti
 provider APIs, with 100 independently sampled test cases per distance level
 for \texttt{move\_sequence} ($d \in \{3, 5, 7, 9, 11\}$, yielding up to 500
 cases per model) and 10 cases per distance level for the seven state-based
-representations.  All seven state-based representations scored $0/N$ across every model and
-every distance level without exception---including the three new representations
+representations.  State-based representations scored effectively $0/N$---one
+\texttt{corner\_cubies} trial succeeded out of 1,190 state-based
+trials---including the three new representations
 (\texttt{natural\_language}, \texttt{perm\_orient}, \texttt{cycle\_notation})
 that were added specifically to test whether more information-rich or
 algebraically explicit encodings would help.  Table~\ref{tab:reps-auto} shows
@@ -716,10 +719,12 @@ Llama 3.3 70B    & \multicolumn{6}{c}{insufficient data (Groq free-tier rate lim
 \bottomrule
 \end{tabular}
 \caption{\texttt{move\_sequence} solve rate by model and distance (Phase 17,
-$N{=}100$ per distance).  All state-based representations scored 0/$N$ without
-exception across all seven models and all distance levels.
-\textsuperscript{*}The BFS table contains fewer $d{=}11$ states (${\approx}48$
-unique cases were sampled), so the $d{=}11$ denominator is 48 rather than 100.}
+$N{=}100$ per distance).  State-based representations scored effectively 0/$N$;
+one \texttt{corner\_cubies} trial (Claude Sonnet 4.6, $d{=}3$) succeeded out
+of 1,190 state-based trials total.
+\textsuperscript{*}The evaluation sampler produced only ${\approx}48$ unique
+$d{=}11$ \texttt{move\_sequence} cases, so the $d{=}11$ denominator is 48
+rather than 100.}
 \label{tab:reps-auto}
 \end{table}
 
@@ -786,9 +791,10 @@ computation is localized to one component in one layer.
 The text representation experiments, run at scale across seven models, produced
 a starker finding than the pilot suggested.  While the one-case pilot hinted that
 \texttt{piece\_identity}---by making permutation structure explicit---outperforms
-position-based representations, this did not survive replication: all state-based
-representations scored zero uniformly across every model and every distance level
-tested.  The lesson is not that representation choice is irrelevant, but that the
+position-based representations, this did not survive replication: state-based
+representations scored effectively zero uniformly across every model and every distance level
+tested (one \texttt{corner\_cubies} trial solved by Claude Sonnet 4.6 at $d{=}3$,
+out of 1,190 state-based trials total).  The lesson is not that representation choice is irrelevant, but that the
 underlying capability---mentally simulating move sequences---is absent regardless
 of how the state is described.  Move inversion (\texttt{move\_sequence}), which
 requires no state understanding at all, stratifies the models clearly: GPT-5.x

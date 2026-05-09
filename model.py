@@ -97,7 +97,7 @@ class TransformerBlock(nn.Module):
 
 class CubeTransformer(HookedRootModule):
     """
-    Small transformer for next-move prediction on 2x2x2 Rubik's cube states.
+    Small transformer for cube-state classification tasks, usually optimal-distance classification.
 
     Hooks available via run_with_cache():
         hook_embed

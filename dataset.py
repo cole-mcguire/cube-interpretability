@@ -13,7 +13,8 @@ Splits saved as:
 
 Each .npz contains:
     states:           float32 (N, 144)  — one-hot encoded cube state
-    next_moves:       int64   (N,)      — move index to predict (0–17)
+    next_moves:       int64   (N,)      — scramble-generation move applied at this step (0–17);
+                                         NOT an optimal policy move (see interp/next_move.py)
     scramble_depth:   int32   (N,)      — steps already applied from solved
     face_solved:      bool    (N, 6)    — per-face solved status
     corner_oriented:  bool    (N, 8)    — per-corner U/D orientation

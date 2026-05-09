@@ -1,5 +1,5 @@
 """
-Training script for CubeTransformer — next-move prediction on 2x2x2 cube states.
+Training script for CubeTransformer — optimal-distance classification or next-move prediction.
 
 Usage:
     uv run cube-train                         # defaults (30 epochs, d_model=128, 4L 4H)

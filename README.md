@@ -18,7 +18,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 | Causal patching | Swapping full residual stream between distance classes flips predictions at 100% — distance is linearly encoded in the embedding before any block runs |
 | Circuit | `mlp_0` dominates (DLA +5.6); attention heads contribute negatively; ≤10 neurons explain most of the signal |
 | Superposition | No evidence of classical superposition — SAE R² ≥0.999 at 1× expansion; representations are near-orthogonal |
-| LLM eval | All 7 state-based representations score **0%** across 7 models and all distances; only `move_sequence` (trivial inversion) varies (GPT-5.x: 100%, Claude/GPT-4o: 32–48%) |
+| LLM eval | State-based representations score effectively 0% (1 corner_cubies trial solved out of 1,190 state-based trials); only `move_sequence` (trivial inversion) varies (GPT-5.x: 100%, Claude/GPT-4o: 32–48%) |
 | Corner model | 76.2% accuracy; L0 heads are critical (ablating L0H1 drops 44.9 pp); attention sharpens monotonically with scramble depth |
 
 **Start here:**
@@ -100,8 +100,6 @@ cube-interpretability/
 │                           across 7 LLMs (OpenAI, Gemini, Anthropic, Groq);
 │                           results cached in data/llm_eval_cache.json
 │
-├── walkthrough.ipynb       Executed notebook: all phases with inline plots
-│
 ├── docs/                   GitHub Pages dashboard + write-up (https://cole-mcguire.github.io/cube-interpretability/)
 │   ├── index.html          Interactive visualizer: 2D net + 3D cube, IDA* solver, scramble/solution log
 │   ├── cube_core.js        Cube logic + IDA* heuristic tables compiled for the browser
@@ -119,7 +117,7 @@ cube-interpretability/
 │   ├── corner_results.html Phase 12 — corner-tokenized model results
 │   ├── corner_attn_results.html Phase 13 — head ablation and specialization
 │   ├── progress_report.tex Full final report (LaTeX)
-│   ├── progress_report.pdf Compiled PDF (17 pages)
+│   ├── progress_report.pdf Compiled PDF (18 pages)
 │   └── references.bib      Bibliography
 │
 ├── data/                   (.npz files gitignored — regenerate with uv run cube-dataset;
@@ -139,7 +137,10 @@ cube-interpretability/
 │   └── Llama3.3_70B_Groq.txt  Early pilot: Llama 3.3 70B (tracked)
 │
 ├── checkpoints/            (gitignored — regenerate with uv run cube-train)
-│   └── best.pt
+│   ├── best.pt             main distance-classifier checkpoint
+│   ├── epoch_001.pt ...    per-epoch checkpoints for training dynamics (Phase 9)
+│   ├── corner/best.pt      corner-tokenized model (Phases 12–15)
+│   └── next_move/best.pt   next-move variant (Phase 10)
 │
 └── pyproject.toml          uv project; scripts: cube-tests, cube-visualizer,
                             cube-dataset, cube-train
@@ -175,8 +176,11 @@ The visualizer (`uv run cube-visualizer`) includes a **Solver** panel: click **S
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
-# Install dependencies
+# Install core dependencies
 uv sync
+
+# Install LLM API clients (needed for Phase 17 / test_representations.py)
+uv sync --extra llm
 
 # Run unit tests (cube simulator + BFS correctness)
 uv run cube-tests
@@ -225,9 +229,25 @@ uv run python -m interp.corner_analysis
 
 # Phase 13: attention head ablation and specialization
 uv run python -m interp.corner_attn
+
+# Phase 17: LLM evaluation (requires API keys; results cached in data/llm_eval_cache.json)
+# Set env vars: ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, GROQ_API_KEY as needed
+uv sync --extra llm
+uv run python test_representations.py --models claude-sonnet-4-6 --n 10
+uv run python test_representations.py --models gpt-4o --reps move_sequence --n 100
 ```
 
 Output files: `data/` (splits + BFS cache), `checkpoints/best.pt`, and HTML visualizations for each analysis step.
+
+## Browser model regeneration
+
+The interactive visualizer in `docs/index.html` uses a compiled ONNX model (`docs/model.onnx`). To regenerate it after retraining:
+
+```bash
+uv run python scripts/export_onnx.py          # exports checkpoints/best.pt → docs/model.onnx
+```
+
+The script uses the legacy TorchScript ONNX exporter (`dynamo=False`) with embedded weights for browser compatibility and includes an `onnxruntime` sanity check if installed.
 
 ## Model architecture
 
@@ -311,7 +331,7 @@ An initial pilot (GPT-5 via chat, 1 case per distance, no code prohibition — t
 | `move_sequence` — the scramble itself (degenerate baseline) | ✓ | ✓ | ✓ |
 | `piece_identity` + chain-of-thought | ✓ | ✗ | ✗ |
 
-A large-scale automated evaluation (API, 100 cases/distance for `move_sequence`, 10 cases/distance for state reps, d=3–11, code prohibited) extended the study to **8 representations** and **7 models**. All state-based representations (including three new ones: `natural_language`, `perm_orient`, `cycle_notation`) score **0% across every model and every distance**. Only `move_sequence` (trivial inversion) varies:
+A large-scale automated evaluation (API, 100 cases/distance for `move_sequence`, 10 cases/distance for state reps, d=3–11, code prohibited) extended the study to **8 representations** and **7 models**. State-based representations score effectively 0% — one `corner_cubies` trial (Claude Sonnet 4.6, d=3) solved out of 1,190 state-based trials total. This includes three new representations (`natural_language`, `perm_orient`, `cycle_notation`). Only `move_sequence` (trivial inversion) varies:
 
 | Model | d=3 | d=5 | d=7 | d=9 | d=11 | Total |
 |---|---|---|---|---|---|---|
@@ -325,7 +345,7 @@ A large-scale automated evaluation (API, 100 cases/distance for `move_sequence`,
 
 † Groq free-tier rate limits prevented completing the N=100 run for Llama.
 
-Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion; Gemini 2.5 Pro scores 85%; Claude models and GPT-4o trail at 32–48%; Llama at 12% in the earlier pilot. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth. No representation, including verbose natural-language or group-theoretic encodings, enabled any model to solve even a single scramble.
+Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion; Gemini 2.5 Pro scores 85%; Claude models and GPT-4o trail at 32–48%; Llama at 12% in the earlier pilot. The true barrier for state-based representations is move simulation itself — not the choice of representation and not the scramble depth. No representation, including verbose natural-language or group-theoretic encodings, meaningfully enabled cube solving (1/1,190 state-based trials).
 
 **Phase 7 — Circuit identification:**
 - `mlp_0` has by far the highest DLA (+5.6), making it the dominant component in the circuit; all attention layers contribute negatively (−0.2 to −1.4)

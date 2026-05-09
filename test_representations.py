@@ -1,15 +1,12 @@
 """
 test_representations.py
 
-Tests 4 text representations of 2x2x2 Rubik's cube states across multiple LLMs
+Tests eight text representations of 2x2x2 Rubik's cube states across multiple LLMs
 to find which representations enable LLM-based solving.
 
 Representations tested:
-  1. face_grid       — 2x2 grid per face, compass layout
-  2. compact_string  — 24-char flat string, faces in U/D/F/B/L/R order
-  3. corner_cubies   — per-corner piece description (which color faces each direction)
-  4. piece_identity  — per-piece name, current position, and W/Y face orientation
-  5. move_sequence   — the scramble sequence itself (degenerate ceiling)
+  face_grid, compact_string, corner_cubies, piece_identity,
+  move_sequence, natural_language, perm_orient, cycle_notation.
 
 Supported providers (set the corresponding env var to activate):
   OPENAI_API_KEY    — gpt-*, o1-*, o3-*, o4-*
@@ -17,7 +14,9 @@ Supported providers (set the corresponding env var to activate):
   ANTHROPIC_API_KEY — claude-*
   GROQ_API_KEY      — llama-*, mixtral-*, and other Groq-hosted models
 
-Edit MODELS below to choose which models to run.
+For the final paper numbers use:
+  --n 10 for all state-based representations (per distance level)
+  --n 100 --reps move_sequence for the move_sequence baseline
 """
 
 import os
@@ -44,7 +43,7 @@ MODELS = [
     "gpt-5.5",
 ]
 
-N_PER_DISTANCE = 1  # test cases per distance level (50 total × 5 reps × n_models queries)
+N_PER_DISTANCE = 1  # default; paper used --n 10 for state reps, --n 100 --reps move_sequence
 
 RESULTS_CACHE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "llm_eval_cache.json")
 

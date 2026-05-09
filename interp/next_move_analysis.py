@@ -1,15 +1,21 @@
 """
 Phase 16: Next-move prediction model — accuracy, implicit distance encoding, and move distribution.
 
+Note: the next-move model is trained on the scramble-generation move (the move applied
+at each scramble step), not on optimal policy moves. Because many scramble histories
+lead to the same cube state, the label is partly unidentifiable from state alone,
+producing near-random top-1 accuracy (~6.3% vs 5.6% random baseline). The move
+distribution analysis compares predicted moves against the empirical distribution of
+scramble moves in the val set, not optimal first moves.
+
 Analyses:
-  1. Accuracy by distance — how does next-move prediction accuracy decay as optimal
-     distance grows? (Harder states may have more valid first moves, so we also track
-     top-k accuracy.)
-  2. Implicit distance probe — even though the next-move model was trained only on the
-     next move label, does its residual stream linearly encode optimal distance?
+  1. Accuracy by distance — top-1 and top-3 accuracy stratified by optimal distance.
+     Near-random accuracy is expected; this confirms the task is a negative control.
+  2. Implicit distance probe — even though the next-move model was trained only on
+     scramble-move labels, does its residual stream linearly encode optimal distance?
      Fit ridge regression probes at each layer and compare MAE to the distance model.
   3. Move distribution — which moves does the model predict most often, and does that
-     match the empirical distribution of optimal first moves in the val set?
+     match the empirical distribution of scramble moves in the val set?
 
 Output:
     docs/next_move_analysis_results.html

@@ -1,9 +1,17 @@
 """
 Phase 10: Next-move prediction variant.
 
-Trains a model on next-move prediction (18 classes) and probes its residual
-stream for optimal_distance — testing whether planning implicitly encodes
-the distance representation that emerges under direct supervision.
+Trains a model to predict the scramble-generation move applied at each step
+(18 classes), then probes its residual stream for optimal_distance — testing
+whether weak/randomized supervision still leaves distance information in the
+residual stream.
+
+Because many histories can lead to the same cube state, the scramble-move label
+is partly unidentifiable from state alone, producing near-random top-1 accuracy
+(~6.3% vs 5.6% random baseline). This is a designed negative result, not a
+failed solver: the near-random task accuracy contrasts with the intact distance
+representation, demonstrating that distance encodes into the residual stream even
+without direct supervision.
 
 Key question: does optimal_distance MAE per layer match the distance-supervised
 model, or is that representation only built when you supervise on it directly?
