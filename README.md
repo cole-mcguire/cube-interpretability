@@ -15,7 +15,7 @@ A mechanistic interpretability project using the 2×2×2 Rubik's cube as a contr
 |---------|--------|
 | Distance classification accuracy | **78.5%** val (random baseline 8.3%) |
 | Linear probes | `face_solved` decodable ≥98% at every layer; distance MAE drops from 0.87 → 0.40 |
-| Causal patching | Swapping full residual stream between distance classes flips predictions at 100% — distance is linearly encoded in the embedding before any block runs |
+| Causal patching | Swapping full residual stream between distance classes flips predictions at 100% — distance is linearly decodable from the embedding before any block runs, though not yet aligned with the final readout basis |
 | Circuit | `mlp_0` dominates (DLA +5.6); attention heads contribute negatively; ≤10 neurons explain most of the signal |
 | Superposition | No evidence of classical superposition — SAE R² ≥0.999 at 1× expansion; representations are near-orthogonal |
 | LLM eval | State-based representations score effectively 0% (1 corner_cubies trial solved out of 1,190 state-based trials); only `move_sequence` (trivial inversion) varies (GPT-5.x: 100%, Claude/GPT-4o: 32–48%) |

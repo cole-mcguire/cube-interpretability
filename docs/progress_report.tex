@@ -283,11 +283,13 @@ model validation accuracy as a function of epoch to detect phase transitions.
 
 \paragraph{Next-move prediction.}
 
-Using the same architecture, we train on the \emph{next-move} task: given a
-scrambled state, predict one of 18 optimal next moves (selecting uniformly among
-tied optimal continuations).  We probe the residual stream of this model with the
-same concept set and compare the internal representations to those of the distance
-model.
+Using the same architecture, we train a next-move variant whose target is the
+scramble-generation move applied at each step---not an optimal policy move.
+Because many scramble histories can lead to the same cube state, this label is
+partly unidentifiable from the state alone; the experiment serves as a
+weak-supervision / negative-control comparison to the distance-supervised model.
+We probe the residual stream of this variant with the same concept set and compare
+the internal representations to those of the distance model.
 
 \paragraph{Superposition analysis.}
 
@@ -517,8 +519,8 @@ moves are unpredictable from cube state alone.  Despite failing the primary
 task, probing reveals that it also encodes optimal distance linearly
 ($R^2 \approx 0.90$ at the embedding, rising to $\approx 0.96$ at L3).
 Corner-orientation decodability is higher than in the distance model at later
-layers, suggesting the next-move task requires retaining finer geometric
-structure to select among optimal continuations.
+layers, suggesting that even weak scramble-move supervision preserves some geometric
+information, though not enough to learn a useful policy.
 
 \paragraph{Superposition analysis.}
 At $1\times$ expansion (512 features for a 128-dim residual stream), $R^2 >
@@ -717,8 +719,9 @@ rather than 100.}
 
 \paragraph{State-based representations fail uniformly.}
 The pilot result suggesting \texttt{piece\_identity} could reach $d{=}5$ (2/3
-cases) did not survive scale: no state-based representation solved a single case
-across any model at any distance, including three new representations designed
+cases) did not survive scale: state-based representations were effectively
+unsuccessful, with only one \texttt{corner\_cubies} trial solved out of 1,190
+state-based trials, including three new representations designed
 to be more information-rich (\texttt{natural\_language}), algebraically explicit
 (\texttt{perm\_orient}), or group-theoretically structured (\texttt{cycle\_notation}).
 The barrier is the model's inability to mentally simulate even a single move
