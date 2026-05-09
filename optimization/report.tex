@@ -463,7 +463,7 @@ choice is the more impactful decision for this task.
   \includegraphics[width=0.72\linewidth]{training_dynamics}
   \caption{Per-epoch validation accuracy (mean $\pm$ std shading over 3 seeds)
     for AdamW, Adam, and SGD with momentum under cosine annealing.
-    All three optimizers converge smoothly and monotonically---no sudden
+    All three optimizers converge smoothly and approximately monotonically---no sudden
     generalization jump or grokking-style phase transition is observed.
     SGD lags throughout but narrows the gap in later epochs as the schedule
     reduces the learning rate.}
@@ -520,7 +520,7 @@ produce final accuracy within 1.4~pp of each other (78.7\%--80.1\%), with no
 weight decay ($\lambda = 0$) performing \emph{best} at 80.1\%. Regularization
 provides no benefit here. This is consistent with the nature of the task:
 BFS labels are deterministic and noise-free, the training set ($\sim$300k samples)
-is large relative to model capacity ($\sim$200k parameters), and there is no
+is substantial relative to model capacity ($\sim$800k parameters), and there is no
 meaningful overfitting to prevent. The flat landscape described in
 Section~\ref{sec:landscape} is consistent with this behavior: in a wide basin
 of near-minimal solutions, shrinking parameters toward the origin is no more
