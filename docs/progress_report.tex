@@ -28,7 +28,7 @@
 % ============================================================
 We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully enumerable
 domain for mechanistic interpretability.  A small transformer
-($d_\text{model}{=}128$, 4 layers, ${\sim}200\text{k}$ parameters) is trained to
+($d_\text{model}{=}128$, 4 layers, ${\sim}800\text{k}$ parameters) is trained to
 classify the optimal half-turn-metric distance to solved (0--11), achieving
 78.5\% validation accuracy against an 8.3\% random baseline.  We apply thirteen
 interpretability analyses to understand what the model has learned.  Linear
@@ -201,7 +201,7 @@ We implement \texttt{CubeTransformer} as a \texttt{HookedRootModule} (Transforme
 \end{align*}
 
 Default configuration: $d_\text{model}{=}128$, $L{=}4$ blocks, $n_\text{heads}{=}4$,
-MLP expansion factor 4 (${\sim}200\text{k}$ parameters).  Since the input is a
+MLP expansion factor 4 (${\sim}800\text{k}$ parameters).  Since the input is a
 single token, attention weights are always 1.0 and computation flows almost
 entirely through the MLP sublayers.  All hook points follow TransformerLens
 naming (\texttt{hook\_embed}, \texttt{hook\_resid\_mid},
@@ -522,13 +522,14 @@ that drives delayed generalization.
 \subsection{Extended Analyses}
 
 \paragraph{Next-move prediction.}
-The next-move model reaches 58.3\% validation accuracy on the 18-class task
-(random baseline: 5.6\%).  Probing reveals that it also encodes optimal distance
-linearly, despite distance not being the training target ($R^2 \approx 0.90$ at
-the embedding, rising to $\approx 0.96$ at L3).  Corner-orientation decodability
-is higher than in the distance model at later layers, suggesting the next-move
-task requires retaining finer geometric structure to select among optimal
-continuations.
+The next-move model achieves only ${\approx}6.3\%$ top-1 validation accuracy on
+the 18-class task (random baseline: 5.6\%), barely above chance---scramble
+moves are unpredictable from cube state alone.  Despite failing the primary
+task, probing reveals that it also encodes optimal distance linearly
+($R^2 \approx 0.90$ at the embedding, rising to $\approx 0.96$ at L3).
+Corner-orientation decodability is higher than in the distance model at later
+layers, suggesting the next-move task requires retaining finer geometric
+structure to select among optimal continuations.
 
 \paragraph{Superposition analysis.}
 At $1\times$ expansion (512 features for a 128-dim residual stream), $R^2 >

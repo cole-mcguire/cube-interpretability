@@ -120,23 +120,23 @@ cube-interpretability/
 │   ├── corner_attn_results.html Phase 13 — head ablation and specialization
 │   ├── progress_report.tex Full final report (LaTeX)
 │   ├── progress_report.pdf Compiled PDF (17 pages)
-│   ├── references.bib      Bibliography
-│   └── proposal.tex        Original project proposal
+│   └── references.bib      Bibliography
 │
-├── data/                   (gitignored — regenerate with uv run cube-dataset)
-│   ├── distances.npz       BFS table: sorted uint64 packed keys + int8 distances (mmap-loaded)
-│   ├── train.npz
-│   ├── val.npz
-│   ├── test.npz
-│   ├── llm_eval_cache.json Persistent eval cache: 7 models × 8 representations × d=3–11
+├── data/                   (.npz files gitignored — regenerate with uv run cube-dataset;
+│   │                        JSON and .txt files are tracked in git)
+│   ├── distances.npz       BFS table: sorted uint64 packed keys + int8 distances (gitignored)
+│   ├── train.npz           (gitignored)
+│   ├── val.npz             (gitignored)
+│   ├── test.npz            (gitignored)
+│   ├── llm_eval_cache.json LLM eval cache: 7 models × 8 representations × d=3–11 (tracked)
 │   │                       (N=100/distance for move_sequence; N=10/distance for state reps)
-│   ├── No_CoT.txt          Early pilot responses: all 5 reps × 3 distances (no CoT)
-│   ├── CoT.txt             Early pilot responses: piece_identity + CoT × 3 distances
-│   ├── Gemini_2_5_Pro.txt  Early pilot: Gemini 2.5 Pro × 5 reps × distances 1–11
-│   ├── GPT_4o.txt          Early pilot: GPT-4o × 5 reps × distances 1–11
-│   ├── GPT_5_2.txt         Early pilot: GPT-5.2 × 5 reps × distances 1–11
-│   ├── GPT_5_4.txt         Early pilot: GPT-5.4 × 5 reps × distances 1–11
-│   └── Llama3.3_70B_Groq.txt  Early pilot: Llama 3.3 70B × 5 reps × distances 1–11
+│   ├── No_CoT.txt          Early pilot responses (tracked)
+│   ├── CoT.txt             Early pilot responses with chain-of-thought (tracked)
+│   ├── Gemini_2_5_Pro.txt  Early pilot: Gemini 2.5 Pro (tracked)
+│   ├── GPT_4o.txt          Early pilot: GPT-4o (tracked)
+│   ├── GPT_5_2.txt         Early pilot: GPT-5.2 (tracked)
+│   ├── GPT_5_4.txt         Early pilot: GPT-5.4 (tracked)
+│   └── Llama3.3_70B_Groq.txt  Early pilot: Llama 3.3 70B (tracked)
 │
 ├── checkpoints/            (gitignored — regenerate with uv run cube-train)
 │   └── best.pt

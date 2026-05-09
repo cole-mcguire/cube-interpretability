@@ -77,14 +77,14 @@ nav a[aria-current="page"] { color: #f1f5f9; background: #334155; border-color: 
 <section class="page-intro">
   <h2>Phase 17 — LLM Evaluation: Which Representation Best Enables Solving?</h2>
   <p><strong>Question:</strong> Which text representation of the cube state gives a general-purpose LLM the best chance of solving it?</p>
-  <p><strong>Method:</strong> Five representations (face_grid, compact_string, corner_cubies, piece_identity, move_sequence) are tested at distances 3, 5, 7, 9, and 11 with a one-shot prompt. Solve rate and solution length are measured.</p>
+  <p><strong>Method:</strong> Eight representations (face_grid, compact_string, corner_cubies, piece_identity, move_sequence, natural_language, perm_orient, cycle_notation) are tested at distances 3, 5, 7, 9, and 11 with a one-shot prompt. Solve rate and solution length are measured.</p>
   <p><strong>Baseline:</strong> move_sequence gives the model the scramble moves directly — any model that can reverse a sequence achieves a near-100% ceiling. The other representations require genuine spatial reasoning.</p>
   <p><strong>To add a model:</strong> set its API key env var and run <code style="background:#0f172a;padding:1px 5px;border-radius:3px">uv run python test_representations.py --models MODEL_NAME</code>. Results accumulate across runs.</p>
 </section>
 
 <section class="example-section">
   <h3>Prompt Format &amp; Representation Examples</h3>
-  <p>Each trial uses a two-part prompt: a <strong>system message</strong> instructing the model to output only a move sequence, followed by a <strong>one-shot user message</strong> containing a solved-state example and then the actual scrambled state. Below is the exact system message and the five representation formats shown for a single 3-move scramble (<code>U' L2 B</code>).</p>
+  <p>Each trial uses a two-part prompt: a <strong>system message</strong> instructing the model to output only a move sequence, followed by a <strong>one-shot user message</strong> containing a solved-state example and then the actual scrambled state. Below is the exact system message and the eight representation formats shown for a single 3-move scramble (<code>U' L2 B</code>).</p>
 
   <div class="prompt-box">
     <h4>System message (identical for all representations)</h4>
@@ -126,7 +126,7 @@ Face order: U D F B L R
 U:GRYW D:WYOB F:BORG B:BROG L:WOYB R:GYRW</pre>
   </div>
 
-  <p>The five representations for the scramble <strong>U' L2 B</strong> (distance = 3, solution = <code>B' L2 U</code>):</p>
+  <p>The eight representations for the scramble <strong>U' L2 B</strong> (distance = 3, solution = <code>B' L2 U</code>):</p>
 
   <div class="repr-cards">
     <div class="repr-card">
@@ -208,6 +208,50 @@ Starting from the solved state, the following scramble was applied:
 
   U' L2 B</pre>
       <p class="annot"><strong>Trivial inversion:</strong> the model just needs to reverse the sequence (B' L2 U). This is not genuine spatial reasoning — it is pure sequence manipulation. Models that can reliably reverse sequences score high; those that cannot (e.g., llama-3.3-70b-versatile) score near zero even here.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>natural_language</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+The cube has 8 corner pieces, each identified by its 3 colors.
+Goal: every piece at its home position with white or yellow facing up or down.
+
+The white-green-orange corner is at top-front-right (home: top-front-left), white correctly faces top — needs to move.
+The yellow-blue-orange corner is at top-front-left (home: bottom-back-left), yellow correctly faces top — needs to move.
+The white-green-red corner is at top-back-left (home: top-front-right), white faces left — needs to move and twist.
+The yellow-blue-red corner is at top-back-right (home: bottom-back-right), yellow faces right — needs to move and twist.
+The yellow-green-red corner is solved at bottom-front-right.
+The white-blue-red corner is at bottom-front-left (home: top-back-right), white correctly faces bottom — needs to move.
+The yellow-green-orange corner is at bottom-back-left (home: bottom-front-left), yellow faces left — needs to move and twist.
+The white-blue-orange corner is at bottom-back-right (home: top-back-left), white faces right — needs to move and twist.</pre>
+      <p class="annot">Verbose natural-language corner description with explicit move/twist hints. Despite the human-readable framing, models achieved 0% solve rate — the gap between understanding the description and planning moves is too large.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>perm_orient</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+Corner slots indexed 0–7: 0=UFR 1=UFL 2=UBL 3=UBR 4=DFR 5=DFL 6=DBL 7=DBR
+Solved state: perm=[0,1,2,3,4,5,6,7]  orient=[0,0,0,0,0,0,0,0]
+
+perm[i]   = home-position index of the piece currently at slot i
+orient[i] = 0 if the W/Y sticker faces U or D (correct)
+            1 if the W/Y sticker faces F or B
+            2 if the W/Y sticker faces L or R
+
+perm  : [1, 6, 0, 7, 4, 3, 5, 2]
+orient: [0, 0, 2, 2, 0, 0, 2, 2]</pre>
+      <p class="annot">Compact algebraic encoding: permutation vector plus orientation vector. Completely lossless and unambiguous, but requires the model to reason in group-theoretic terms. Zero solves across all models.</p>
+    </div>
+
+    <div class="repr-card">
+      <h4>cycle_notation</h4>
+      <pre>Standard orientation: White on top (U), Green in front (F)
+(A B C) means: piece from home A is at slot B, piece from home B is at slot C, piece from home C is at slot A.
+Twist key: 1 = W/Y sticker faces F/B, 2 = W/Y sticker faces L/R (0 = correct, omitted).
+
+Corner permutation: (UFR UBL DBR UBR DFL DBL UFL)
+Twisted corners:     UBL:2  UBR:2  DBL:2  DBR:2</pre>
+      <p class="annot">Group-theoretic cycle notation for corner permutation plus per-corner twist values. The most compact algebraic form — zero solves, as models cannot map cycle notation to concrete moves.</p>
     </div>
   </div>
 </section>
