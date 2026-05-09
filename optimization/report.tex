@@ -48,7 +48,7 @@ $78.9\!\pm\!0.2$\%, respectively, while SGD trails by $\sim$4.5~pp ($74.4$\%, st
 cosine annealing outperforms step and constant schedules by $\sim$1~pp; and
 weight decay provides no benefit on this clean combinatorial task.
 The learned heuristic achieves perfect accuracy at distances 0--2 but degrades
-sharply for harder states, overestimating 12.5\% of the time and therefore
+sharply for harder states, overestimating 13.6\% of the time and therefore
 violating the admissibility condition required for A* optimality guarantees.
 A two-dimensional loss-landscape visualization reveals a broad, flat basin around
 the trained solution, consistent with the low hyperparameter sensitivity observed
@@ -286,7 +286,7 @@ We deploy the trained model as a search heuristic $h(s) = \hat{d}(s)$ in A*:
 \end{equation}
 where $g(s)$ is the number of moves from the start state to $s$ and $h(s)$
 is the model's predicted distance to solved. Because $h$ is inadmissible
-(overestimates 12.5\% of the time), A* is not guaranteed to return optimal
+(overestimates 13.6\% of the time), A* is not guaranteed to return optimal
 solutions; we measure empirically how often it does.
 
 Since $h$ can overestimate, the first solution found by A* is not guaranteed
@@ -589,11 +589,11 @@ states are rare in this dataset: only 129 validation examples at $d = 9$ and
 4 at $d = 10$. The model therefore receives limited signal for the hardest
 classes and tends to confuse adjacent high-distance labels.
 
-The learned heuristic is \textbf{not admissible}: 12.5\% of validation predictions
+The learned heuristic is \textbf{not admissible}: 13.6\% of validation predictions
 overestimate the true distance ($\hat{d} > d^*$). This means the heuristic
 cannot be used directly in A* with optimality guarantees. However, the error
 distribution (Figure~\ref{fig:heuristic}, right) is skewed toward underestimation:
-87.5\% of predictions are at or below the true distance. In practice, an A*
+86.4\% of predictions are at or below the true distance. In practice, an A*
 variant tolerating occasional overestimates---similar to the BWAS approach of
 DeepCubeA~\cite{agostinelli2019deepcubea}---may still find near-optimal or
 optimal solutions for many near- and mid-distance states.
@@ -622,7 +622,7 @@ and a small bias toward higher predictions becomes costly for admissibility.
     admissible).
     \textbf{Right:} the overestimation rate peaks at $d = 5$--6 ($>50\%$) and
     drops to zero for $d = 8$--10; the dashed line marks the overall rate of
-    12.5\%.  Inadmissibility is concentrated in the mid-range distance classes
+    13.6\%.  Inadmissibility is concentrated in the mid-range distance classes
     where classification is most uncertain.}
   \label{fig:overestimation}
 \end{figure}
@@ -744,7 +744,7 @@ offers no benefit and no decay performs best, reflecting the clean, noise-free
 nature of BFS-derived labels.
 Fourth, \textbf{the learned heuristic is practical but not provably optimal}:
 it classifies easy states ($d \leq 3$) perfectly but fails on hard states
-($d \geq 9$), and overestimates 12.5\% of the time, violating the admissibility condition
+($d \geq 9$), and overestimates 13.6\% of the time, violating the admissibility condition
 required for A* optimality guarantees.
 Fifth, \textbf{A* with the learned heuristic provides large efficiency gains
 for near-to-mid-range states}: for $d \leq 3$ the heuristic overestimates
