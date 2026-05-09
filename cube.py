@@ -475,58 +475,61 @@ def compute_optimal_distances(verbose: bool = True) -> DistanceTable:
     every rotationally-equivalent solved state, so starting from all 24 would
     add the same entries a second time without growing the reachable set.
 
-    Runtime: ~25–30 min depending on machine; peak memory during the BFS is
-    ~15 GB (the intermediate dict). Call once and cache.
+    Runtime: ~10 min on Python 3.11+ (chunked vectorised numpy); peak memory
+    ~2 GB. Call once and cache.
+
+    Speedups vs naive deque BFS:
+    - Vectorised frontier expansion: chunk[:, _all_perms] applies all 18 moves
+      to all N frontier states in one C-level numpy call instead of a Python loop.
+    - Integer keys: base-6 packed uint64 hash O(1) vs bytes hash O(24).
+    - Chunked (50k states/chunk): bounds peak memory to ~21 MB/chunk.
     """
-    from collections import deque
     import time
 
-    distances: dict[bytes, int] = {}
-    queue: deque[bytes] = deque()
+    # Build (NUM_MOVES, NUM_STICKERS) permutation lookup for vectorised expansion.
+    _all_perms = np.empty((NUM_MOVES, NUM_STICKERS), dtype=np.intp)
+    for m in range(NUM_MOVES):
+        face_idx, turn_type = m // 3, m % 3
+        if turn_type == 0:
+            _all_perms[m] = BASE_PERMUTATIONS[face_idx]
+        elif turn_type == 1:
+            _all_perms[m] = INV_PERMUTATIONS[face_idx]
+        else:
+            p = BASE_PERMUTATIONS[face_idx]
+            _all_perms[m] = p[p]
 
-    key = SOLVED_STATE.tobytes()
-    distances[key] = 0
-    queue.append(key)
+    CHUNK = 50_000  # 50k × 18 × 24 bytes ≈ 21 MB/chunk
 
+    visited: dict[int, int] = {int(pack_state(SOLVED_STATE)): 0}
+    frontier = np.array([SOLVED_STATE], dtype=np.int8)
+    d = 0
     t0 = time.perf_counter()
-    while queue:
-        key = queue.popleft()
-        d = distances[key]
-        state = np.frombuffer(key, dtype=np.int8)  # zero-copy view
 
-        for move_idx in range(NUM_MOVES):
-            face_idx = move_idx // 3
-            turn_type = move_idx % 3
-            if turn_type == 0:
-                new_state = state[BASE_PERMUTATIONS[face_idx]]
-            elif turn_type == 1:
-                new_state = state[INV_PERMUTATIONS[face_idx]]
-            else:
-                p = BASE_PERMUTATIONS[face_idx]
-                new_state = state[p][p]
+    while len(frontier) > 0:
+        d += 1
+        new_parts = []
+        for start in range(0, len(frontier), CHUNK):
+            chunk = frontier[start:start + CHUNK]
+            # Apply all 18 moves to this chunk: (C, 24)[C, 18, 24] → (C*18, 24)
+            succ = chunk[:, _all_perms].reshape(-1, NUM_STICKERS)
+            keys = _pack_states_batch(succ)
+            mask = np.zeros(len(keys), dtype=bool)
+            for i, k in enumerate(keys.tolist()):
+                if k not in visited:
+                    mask[i] = True
+                    visited[k] = d
+            new_parts.append(succ[mask])
+        frontier = np.concatenate(new_parts) if new_parts else np.empty((0, NUM_STICKERS), dtype=np.int8)
+        if verbose:
+            elapsed = time.perf_counter() - t0
+            print(f"  distance {d:2d}: {len(frontier):>12,} states  ({elapsed:.1f}s)")
 
-            new_key = new_state.tobytes()
-            if new_key not in distances:
-                distances[new_key] = d + 1
-                queue.append(new_key)
-
-    bfs_seconds = time.perf_counter() - t0
     if verbose:
-        from collections import Counter
-        counts = Counter(distances.values())
-        for dist in sorted(counts):
-            print(f"  distance {dist:2d}: {counts[dist]:>12,} states")
-        print(f"  total: {len(distances):,} states  ({bfs_seconds:.1f}s)")
-
-    # Convert the dict to sorted (uint64, int8) arrays.
-    # b''.join + frombuffer is all C-speed; this is much faster than a Python loop.
-    if verbose:
+        print(f"  total: {len(visited):,} states")
         print("  packing and sorting for on-disk format...", end=" ", flush=True)
     t_pack = time.perf_counter()
-    n = len(distances)
-    state_array = np.frombuffer(b"".join(distances.keys()), dtype=np.int8).reshape(n, NUM_STICKERS)
-    values = np.fromiter(distances.values(), dtype=np.int8, count=n)
-    packed = _pack_states_batch(state_array)
+    packed = np.fromiter(visited.keys(), dtype=np.uint64, count=len(visited))
+    values = np.fromiter(visited.values(), dtype=np.int8, count=len(visited))
     order = np.argsort(packed)
     table = DistanceTable(packed[order], values[order])
     if verbose:
