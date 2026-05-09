@@ -337,12 +337,12 @@ reproduced end-to-end in \texttt{optimization\_experiments.ipynb}, which is
 fully self-contained: it generates the BFS distance table, dataset, and all
 training runs from scratch, caching intermediate results to \texttt{results/}
 to avoid redundant computation on kernel restart.
-Training ran on Apple Silicon GPU (MPS) and took approximately 9 minutes
+Training ran on Apple Silicon GPU (MPS) and took approximately 2 minutes
 per 30-epoch run in the self-contained notebook (22 configurations total);
-a cold-start execution of the notebook takes approximately 4 hours end-to-end,
-dominated by the one-time BFS precomputation ($\sim$40 min) and training
-($\sim$3.5 hours). Subsequent runs with cached \texttt{results/} complete
-in under 15 minutes.
+a cold-start execution of the notebook takes approximately 75 minutes end-to-end,
+dominated by the one-time BFS precomputation ($\sim$16 min, using chunked
+vectorised NumPy) and training ($\sim$40 min). Subsequent runs with cached
+\texttt{results/} complete in under 15 minutes.
 Because the class-weighted loss uses inverse-frequency weights normalized across
 classes, its absolute scale is not directly comparable to standard unweighted
 cross-entropy; we therefore interpret validation loss primarily through relative
