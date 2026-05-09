@@ -53,7 +53,7 @@ cube-interpretability/
 │   ├── Cube                State machine: apply_move, scramble, encode/decode
 │   ├── solve()             Optimal BFS-table solver → list of move indices
 │   ├── generate_scramble_solution_pairs()
-│   ├── compute_optimal_distances()   Full BFS (~25–30 min, cached as data/distances.npz)
+│   ├── compute_optimal_distances()   Full BFS (~10 min, cached as data/distances.npz)
 │   └── generate_dataset()  Scramble sequences with labels
 │
 ├── cube_visualizer.py      Interactive tkinter visualizer
@@ -181,7 +181,7 @@ uv sync
 # Run unit tests (cube simulator + BFS correctness)
 uv run cube-tests
 
-# Generate dataset (computes BFS distances on first run, ~25–30 min; cached afterward)
+# Generate dataset (computes BFS distances on first run, ~10 min; cached afterward)
 uv run cube-dataset
 
 # Train the transformer (~30 epochs, ~5 min on MPS/GPU)
@@ -261,7 +261,7 @@ Each `.npz` split contains:
 
 Default split sizes: 50k / 5k / 5k sequences → ~300k / 30k / 30k samples.
 
-The BFS reaches the full 88M-state space from a single solved seed (face moves connect every rotationally-equivalent solved state). The one-time BFS takes ~25–30 min; the result is packed into a sorted `(uint64, int8)` array pair and written to `data/distances.npz` (~760 MB). Subsequent loads are memory-mapped and effectively instant (~0.1 s), and lookup is `O(log N)` via `np.searchsorted`.
+The BFS reaches the full 88M-state space from a single solved seed (face moves connect every rotationally-equivalent solved state). The one-time BFS takes ~10 min (chunked vectorised numpy); the result is packed into a sorted `(uint64, int8)` array pair and written to `data/distances.npz` (~760 MB). Subsequent loads are memory-mapped and effectively instant (~0.1 s), and lookup is `O(log N)` via `np.searchsorted`.
 
 ## Move vocabulary
 
@@ -375,7 +375,7 @@ Frontier reasoning models (GPT-5.x) achieve near-perfect move-sequence inversion
 
 ## Reproducibility notes
 
-- **BFS distance table** (`data/distances.npz`, ~760 MB) is gitignored. Regenerate with `uv run cube-dataset` (~25–30 min, ~8 GB peak RAM). The table is memory-mapped on subsequent loads (~0.1 s, `O(log N)` lookup via `np.searchsorted`).
+- **BFS distance table** (`data/distances.npz`, ~760 MB) is gitignored. Regenerate with `uv run cube-dataset` (~10 min, ~2 GB peak RAM). The table is memory-mapped on subsequent loads (~0.1 s, `O(log N)` lookup via `np.searchsorted`).
 - **Model checkpoints** (`checkpoints/best.pt`) are gitignored. Regenerate with `uv run cube-train` (~30 epochs, ~5 min on MPS/GPU). The corner model and next-move model require separate training runs (see Quickstart).
 - **LLM evaluation API keys** are not committed. Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_API_KEY`, and `GROQ_API_KEY` as environment variables before running `test_representations.py`. Results are cached in `data/llm_eval_cache.json` so re-runs are free.
 - **LLM eval cost warning**: running the full automated eval (7 models × 8 reps × 100 cases/distance) incurs non-trivial API costs. The cached results in `data/llm_eval_cache.json` cover the full run; use them instead of re-running.
