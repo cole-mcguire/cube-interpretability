@@ -325,7 +325,7 @@ validation set.
 
 \subsection{Experimental Setup}
 
-All experiments use the same 2$\times$2$\times$2 cube dataset: 300k training
+All experiments use the same 2$\times$2$\times$2 cube dataset: approximately 300k training
 samples and 30k validation samples, drawn from scrambles of depth 1--11 with
 labels provided by exact BFS. The default configuration is $d_\text{model} = 128$,
 4 layers, 4 heads, batch size 512, trained for 30 epochs. Unless a hyperparameter
@@ -472,7 +472,7 @@ choice is the more impactful decision for this task.
 
 Figure~\ref{fig:dynamics} shows the per-epoch validation accuracy for all three
 optimizers across 30 epochs and 3 seeds.
-Convergence is smooth and monotone for all configurations: accuracy rises
+Convergence is smooth and approximately monotone for all configurations: accuracy rises
 steadily from epoch 1 through epoch 30, with no evidence of the delayed
 generalization (grokking) reported by Power et al.~\cite{power2022grokking}
 on modular arithmetic tasks.
@@ -519,7 +519,7 @@ Figure~\ref{fig:hyperparam} (right) shows that all four weight decay values
 produce final accuracy within 1.4~pp of each other (78.7\%--80.1\%), with no
 weight decay ($\lambda = 0$) performing \emph{best} at 80.1\%. Regularization
 provides no benefit here. This is consistent with the nature of the task:
-BFS labels are deterministic and noise-free, the training set (300k samples)
+BFS labels are deterministic and noise-free, the training set ($\sim$300k samples)
 is large relative to model capacity ($\sim$200k parameters), and there is no
 meaningful overfitting to prevent. The flat landscape described in
 Section~\ref{sec:landscape} is consistent with this behavior: in a wide basin
