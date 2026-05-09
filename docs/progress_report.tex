@@ -30,33 +30,20 @@ We use the $2{\times}2{\times}2$ Rubik's cube as a controlled, fully enumerable
 domain for mechanistic interpretability.  A small transformer
 ($d_\text{model}{=}128$, 4 layers, ${\sim}800\text{k}$ parameters) is trained to
 classify the optimal half-turn-metric distance to solved (0--11), achieving
-78.5\% validation accuracy against an 8.3\% random baseline.  We apply thirteen
-interpretability analyses to understand what the model has learned.  Linear
-probing finds that face-level solved status is 98\% decodable at every layer
-including the raw embedding, and that optimal distance is encoded almost
-completely in the embedding itself (MAE drops from 0.87 to 0.40 in the first
-block).  Activation patching reveals a dissociation: probe-readable features are
-not causally active, whereas swapping the full residual stream achieves a 100\%
-prediction flip at every layer.  Tuned-lens analysis reconciles these findings:
-each block contributes meaningful computation in a rotated basis.  Sparse
-autoencoders confirm monosemantic face and distance features ($r \approx
-0.81$--$0.89$), with no evidence of classical superposition.  Circuit analysis
-localizes the distance computation to \texttt{mlp\_0} (+5.6 DLA); a
-corner-tokenized variant reveals that Layer-0 attention heads dominate
-inter-cubie routing, with a single head (L0H1) responsible for a 44.9 pp
-accuracy drop when ablated.  Neuron profiling shows top-DLA neurons are
-distance-selective rather than feature-selective; corner circuit analysis reveals
-a divergence between DLA and ablation sensitivity that characterizes load-bearing
-vs.\ distance-promoting heads.  In a parallel line of work, a large-scale
-automated evaluation tests seven pre-trained LLMs (GPT-5.5, GPT-5.4, Gemini 2.5
-Pro, Claude Sonnet 4.6, Claude Opus 4.7, GPT-4o, Llama 3.3 70B) across eight
-text representations of cube state (100 cases per distance for
-\texttt{move\_sequence}; 10 cases per distance for state-based representations).
-State-based representations score effectively zero across every model and every
-distance (one \texttt{corner\_cubies} case solved out of 1,190 state-based
-trials); \texttt{move\_sequence} solve rates range from 32\% (GPT-4o,
-Claude Opus 4.7) to 100\% (GPT-5.5), stratifying models by notation-parsing
-ability rather than cube understanding.
+78.5\% validation accuracy against an 8.3\% random baseline.  Linear probing
+finds that optimal distance is already encoded almost completely in the embedding
+(MAE 0.87 $\to$ 0.40 after one block), while face-level solved status is 98\%
+decodable at every layer.  Activation patching reveals a dissociation:
+probe-readable features are not causally active, but swapping the full residual
+stream achieves a 100\% prediction flip at every layer.  Circuit analysis
+localizes the causal distance computation to \texttt{mlp\_0}; a corner-tokenized
+variant shows that Layer-0 attention heads dominate inter-cubie routing, with a
+single head responsible for a 44.9 pp accuracy drop when ablated.  In a parallel
+line of work, a large-scale automated evaluation tests seven LLMs across eight
+text representations of cube state.  State-based representations score
+effectively zero (one solve out of 1,190 state-based trials);
+\texttt{move\_sequence} solve rates range from 32\% to 100\%, stratifying
+models by sequence-inversion ability rather than cube understanding.
 \end{abstract}
 
 % ============================================================
@@ -778,9 +765,12 @@ The transformer blocks then \emph{rotate} the representation to align it with th
 unembedding direction, as evidenced by the logit/tuned-lens gap.  They do not add
 new information but do meaningful work refining the basis.  This is consistent with
 Variengien et al.'s prediction that belief states are linearly represented in
-residual streams \cite{variengien2024beliefstate}---our model is a direct
-instantiation of this, since the cube's belief state for a single-token input is
-a point mass.
+residual streams \cite{variengien2024beliefstate}.  Our setting is not
+identical---the model is a supervised distance classifier rather than an optimal
+next-token predictor over a partially observed process---but it provides a clean
+discrete analogue: the input corresponds to a known cube state and the model
+must map it to a structured target.  The linear probing result is consistent
+with that prediction.
 
 Circuit analysis sharpens this picture: virtually all the distance computation
 happens in \texttt{mlp\_0}, with attention heads contributing negatively in
